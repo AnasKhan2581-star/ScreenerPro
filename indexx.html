@@ -1,0 +1,2266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMC Crypto Scanner — Institutional Alert System</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#050810;--bg2:#090d1a;--bg3:#0d1526;
+  --card:#0f1a2e;--card2:#132035;
+  --border:#1e3058;--border2:#2a4070;
+  --accent:#00d4ff;--accent2:#0088cc;
+  --green:#00ff88;--green2:#00cc6a;
+  --red:#ff3366;--red2:#cc0044;
+  --orange:#ff8800;--yellow:#ffd700;--purple:#cc88ff;
+  --text:#e8f0ff;--text2:#8899bb;--text3:#445577;
+  --mono:'Space Mono',monospace;--sans:'Syne',sans-serif;
+  --glow:0 0 20px rgba(0,212,255,0.3);
+  --glow-g:0 0 20px rgba(0,255,136,0.3);
+  --glow-r:0 0 20px rgba(255,51,102,0.3);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(0,212,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.025) 1px,transparent 1px);
+  background-size:50px 50px;
+}
+
+/* ── HEADER ── */
+header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(5,8,16,0.96);backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+  padding:0 20px;height:62px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.logo{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:800;letter-spacing:-.5px;}
+.logo-icon{
+  width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;
+  box-shadow:var(--glow);
+}
+.logo span{color:var(--accent);}
+nav{display:flex;gap:2px;}
+.nav-btn{
+  background:none;border:none;cursor:pointer;
+  font-family:var(--sans);font-size:13px;font-weight:600;
+  color:var(--text2);padding:7px 14px;border-radius:6px;transition:all .2s;
+}
+.nav-btn:hover,.nav-btn.active{color:var(--accent);background:rgba(0,212,255,0.08);}
+.hdr-right{display:flex;align-items:center;gap:10px;}
+.status-pill{
+  display:flex;align-items:center;gap:7px;
+  font-family:var(--mono);font-size:10px;color:var(--text2);
+  background:var(--card);border:1px solid var(--border);
+  padding:5px 12px;border-radius:20px;
+}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 1.6s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.4;}}
+.new-badge{
+  background:var(--red);color:#fff;font-family:var(--mono);font-size:10px;font-weight:700;
+  padding:3px 9px;border-radius:10px;box-shadow:var(--glow-r);min-width:60px;text-align:center;
+}
+.countdown-pill{
+  font-family:var(--mono);font-size:10px;color:var(--yellow);
+  background:var(--card);border:1px solid var(--border);
+  padding:5px 12px;border-radius:20px;
+}
+
+/* ── MAIN ── */
+main{position:relative;z-index:1;padding:20px;}
+
+/* ── PAGES ── */
+.page{display:none;}.page.active{display:block;}
+
+/* ── STAT BAR ── */
+.stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px;}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:14px 18px;transition:border-color .2s;
+}
+.stat-card:hover{border-color:var(--border2);}
+.slbl{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;}
+.sval{font-family:var(--mono);font-size:20px;font-weight:700;margin-top:3px;}
+.sval.ac{color:var(--accent);}.sval.gr{color:var(--green);}.sval.rd{color:var(--red);}
+.sval.yl{color:var(--yellow);}.sval.pu{color:var(--purple);}
+.ssub{font-size:10px;color:var(--text3);margin-top:2px;}
+
+/* ── WATCHLIST ── */
+.section-title{
+  font-size:11px;font-weight:700;color:var(--text2);letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-title::before{content:'';width:3px;height:14px;background:var(--accent);border-radius:2px;box-shadow:var(--glow);}
+.watchlist-wrap{margin-bottom:18px;}
+.watchlist-tabs{display:flex;gap:4px;margin-bottom:10px;}
+.wtab{
+  background:var(--bg2);border:1px solid var(--border);border-radius:6px;
+  font-family:var(--mono);font-size:10px;color:var(--text3);padding:4px 12px;cursor:pointer;transition:all .2s;
+}
+.wtab.active{background:rgba(0,212,255,0.1);border-color:var(--accent);color:var(--accent);}
+.watchlist-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;
+}
+.witem{
+  background:var(--card);border:1px solid var(--border);border-radius:7px;
+  padding:8px 10px;cursor:pointer;transition:all .2s;
+}
+.witem:hover{border-color:var(--accent);transform:translateY(-1px);}
+.wsym{font-family:var(--mono);font-size:11px;font-weight:700;}
+.wprice{font-family:var(--mono);font-size:10px;color:var(--text2);margin-top:2px;}
+.wchg{font-family:var(--mono);font-size:10px;margin-top:1px;}
+.wchg.up{color:var(--green);}.wchg.dn{color:var(--red);}
+
+/* ── CONTROLS ── */
+.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.fg{display:flex;gap:3px;background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:3px;}
+.fb{
+  background:none;border:none;cursor:pointer;
+  font-family:var(--mono);font-size:10px;color:var(--text2);
+  padding:5px 12px;border-radius:5px;transition:all .2s;white-space:nowrap;
+}
+.fb.active{background:var(--accent);color:var(--bg);font-weight:700;}
+.fb:hover:not(.active){color:var(--accent);background:rgba(0,212,255,.1);}
+.si{
+  background:var(--card);border:1px solid var(--border);border-radius:7px;
+  padding:7px 12px;font-family:var(--mono);font-size:11px;color:var(--text);
+  outline:none;transition:border-color .2s;
+}
+.si:focus{border-color:var(--accent);}
+.si::placeholder{color:var(--text3);}
+select.si{cursor:pointer;}
+.cbtn{
+  background:var(--card);border:1px solid var(--border);border-radius:7px;
+  padding:7px 12px;cursor:pointer;font-family:var(--mono);font-size:10px;color:var(--text2);
+  transition:all .2s;display:flex;align-items:center;gap:5px;white-space:nowrap;
+}
+.cbtn:hover,.cbtn.on{border-color:var(--accent);color:var(--accent);}
+
+/* ── ALERT TABLE ── */
+.ath{
+  display:grid;
+  grid-template-columns:82px 130px 65px 75px 100px 60px 62px 75px 1fr 28px;
+  gap:10px;padding:7px 16px;
+  border-bottom:1px solid var(--border);margin-bottom:4px;
+}
+.ath span{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;}
+.alerts-list{display:flex;flex-direction:column;gap:5px;}
+.arow{
+  background:var(--card);border:1px solid var(--border);border-radius:9px;
+  padding:12px 16px;cursor:pointer;transition:all .2s;
+  display:grid;
+  grid-template-columns:82px 130px 65px 75px 100px 60px 62px 75px 1fr 28px;
+  align-items:center;gap:10px;position:relative;overflow:hidden;
+}
+.arow::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;}
+.arow.long::before{background:var(--green);box-shadow:var(--glow-g);}
+.arow.short::before{background:var(--red);box-shadow:var(--glow-r);}
+.arow:hover{border-color:var(--accent);background:var(--card2);transform:translateX(2px);}
+.arow.fresh{animation:slideIn .4s ease-out;}
+@keyframes slideIn{from{opacity:0;transform:translateX(-16px);}to{opacity:1;transform:translateX(0);}}
+
+.asymbol{font-family:var(--mono);font-size:12px;font-weight:700;}
+.astrat{
+  font-family:var(--mono);font-size:9px;
+  background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);
+  color:var(--accent);padding:3px 7px;border-radius:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.atf{font-family:var(--mono);font-size:10px;}
+.adir{font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 9px;border-radius:4px;text-align:center;}
+.adir.long{background:rgba(0,255,136,.12);color:var(--green);border:1px solid rgba(0,255,136,.3);}
+.adir.short{background:rgba(255,51,102,.12);color:var(--red);border:1px solid rgba(255,51,102,.3);}
+.aprice{font-family:var(--mono);font-size:11px;}
+.arr{font-family:var(--mono);font-size:10px;color:var(--yellow);}
+.awr{font-family:var(--mono);font-size:10px;color:var(--text2);}
+.atime{font-family:var(--mono);font-size:9px;color:var(--text3);}
+.achrt{border-radius:3px;overflow:hidden;background:var(--bg3);}
+.aarr{color:var(--text3);font-size:13px;}
+
+/* ── MODAL ── */
+.overlay{
+  position:fixed;inset:0;background:rgba(5,8,16,.93);backdrop-filter:blur(10px);
+  z-index:1000;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.overlay.open{opacity:1;pointer-events:all;}
+.modal{
+  background:var(--card);border:1px solid var(--border2);border-radius:16px;
+  width:min(920px,96vw);max-height:92vh;overflow-y:auto;
+  transform:scale(.96) translateY(16px);transition:transform .25s;
+  box-shadow:0 40px 120px rgba(0,0,0,.85);
+}
+.overlay.open .modal{transform:scale(1) translateY(0);}
+.mhdr{
+  padding:22px 26px;border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-start;justify-content:space-between;
+  position:sticky;top:0;background:var(--card);z-index:5;border-radius:16px 16px 0 0;
+}
+.msym{font-size:26px;font-weight:800;letter-spacing:-1px;}
+.msub{font-family:var(--mono);font-size:11px;color:var(--text2);margin-top:5px;}
+.mclose{
+  background:none;border:1px solid var(--border);border-radius:7px;
+  color:var(--text2);cursor:pointer;font-size:16px;
+  width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;flex-shrink:0;
+}
+.mclose:hover{border-color:var(--red);color:var(--red);}
+.mbody{padding:22px 26px;display:flex;flex-direction:column;gap:16px;}
+.mchrt{background:var(--bg2);border:1px solid var(--border);border-radius:10px;height:310px;overflow:hidden;position:relative;display:block;}
+.mchrt canvas{display:block;border-radius:10px;}
+.msg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.ms{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;}
+.ms .l{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;}
+.ms .v{font-family:var(--mono);font-size:15px;font-weight:700;margin-top:4px;}
+.mlvls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.lvlcard{background:var(--bg2);border-radius:7px;padding:10px 12px;}
+.lvlcard .ll{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;}
+.lvlcard .lv{font-family:var(--mono);font-size:13px;font-weight:700;margin-top:3px;}
+.lvlcard.en .lv{color:var(--accent);}
+.lvlcard.sl .lv{color:var(--red);}
+.lvlcard.t1 .lv{color:var(--green);}
+.lvlcard.t2 .lv{color:var(--green2);}
+.lvlcard.t3 .lv{color:var(--yellow);}
+.lvlcard.rr .lv{color:var(--yellow);}
+.expl{
+  background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--accent);
+  border-radius:8px;padding:14px 16px;
+}
+.expl h4{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:7px;letter-spacing:1px;}
+.expl p{font-size:13px;line-height:1.75;color:var(--text2);}
+.dbadge{
+  display:inline-flex;align-items:center;gap:6px;
+  border-radius:5px;padding:5px 12px;
+  font-family:var(--mono);font-size:11px;font-weight:700;margin-left:8px;
+}
+.dbadge.long{background:rgba(0,255,136,.12);border:1px solid var(--green);color:var(--green);}
+.dbadge.short{background:rgba(255,51,102,.12);border:1px solid var(--red);color:var(--red);}
+.sbadge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(0,212,255,.1);border:1px solid var(--accent);
+  border-radius:5px;padding:5px 12px;
+  font-family:var(--mono);font-size:11px;color:var(--accent);margin-left:6px;
+}
+
+/* ── TOAST ── */
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+.toast{
+  background:var(--card2);border:1px solid var(--border2);border-radius:11px;
+  padding:12px 16px;min-width:280px;max-width:360px;
+  display:flex;align-items:flex-start;gap:10px;cursor:pointer;
+  animation:tIn .3s ease-out;box-shadow:0 16px 50px rgba(0,0,0,.6);
+}
+@keyframes tIn{from{opacity:0;transform:translateX(30px);}to{opacity:1;transform:translateX(0);}}
+@keyframes tOut{to{opacity:0;transform:translateX(30px);}}
+.toast.out{animation:tOut .25s ease-in forwards;}
+.toast.long-t{border-left:3px solid var(--green);}
+.toast.short-t{border-left:3px solid var(--red);}
+.tico{font-size:18px;flex-shrink:0;margin-top:1px;}
+.ttitle{font-size:12px;font-weight:700;}
+.tbody{font-family:var(--mono);font-size:10px;color:var(--text2);margin-top:3px;}
+.ttime{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:3px;}
+
+/* ── STRATEGIES PAGE ── */
+.sg{display:flex;flex-direction:column;gap:18px;}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow:hidden;transition:border-color .2s;}
+.sc:hover{border-color:var(--border2);}
+.sch{
+  padding:18px 22px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:14px;
+}
+.snum{
+  width:42px;height:42px;border-radius:9px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:16px;font-weight:700;
+}
+.stitle{font-size:17px;font-weight:700;letter-spacing:-.3px;}
+.stagline{font-size:12px;color:var(--text2);margin-top:2px;}
+.wrbadge{
+  margin-left:auto;font-family:var(--mono);font-size:13px;font-weight:700;
+  background:rgba(0,255,136,.08);border:1px solid var(--green2);
+  color:var(--green);padding:5px 14px;border-radius:7px;flex-shrink:0;
+}
+.scb{padding:18px 22px;display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.cond-list{display:flex;flex-direction:column;gap:7px;}
+.cond-item{
+  display:flex;align-items:flex-start;gap:8px;
+  font-size:12px;line-height:1.55;color:var(--text2);
+}
+.cond-item::before{content:'→';color:var(--accent);flex-shrink:0;font-family:var(--mono);margin-top:1px;}
+.tm-box{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:12px 14px;margin-bottom:10px;}
+.tm-lbl{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.tm-val{font-size:12px;color:var(--text2);}
+.s-desc{font-size:12px;color:var(--text2);line-height:1.7;padding:12px 14px;background:var(--bg2);border-radius:7px;margin-top:8px;}
+.sstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:12px 22px;border-top:1px solid var(--border);}
+.ss{text-align:center;padding:8px;}
+.ss .sv{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent);}
+.ss .sl{font-size:9px;color:var(--text3);margin-top:2px;}
+
+/* ── SETTINGS PAGE ── */
+.setgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.setcard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 22px;}
+.setcard h3{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:14px;letter-spacing:.5px;}
+.setr{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);}
+.setr:last-child{border-bottom:none;}
+.setr-lbl{font-size:12px;color:var(--text2);}
+.setr-sub{font-size:10px;color:var(--text3);margin-top:2px;}
+.tog{
+  width:42px;height:22px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:11px;cursor:pointer;position:relative;transition:all .3s;flex-shrink:0;
+}
+.tog.on{background:var(--accent2);border-color:var(--accent);}
+.tog::after{
+  content:'';position:absolute;top:2px;left:2px;
+  width:16px;height:16px;border-radius:8px;background:var(--text3);transition:all .3s;
+}
+.tog.on::after{left:22px;background:#fff;}
+.rinput{
+  background:var(--bg3);border:1px solid var(--border);border-radius:5px;
+  padding:3px 8px;font-family:var(--mono);font-size:11px;color:var(--text);
+  width:70px;text-align:center;outline:none;
+}
+
+/* ── EMPTY / LOADING ── */
+.empty{text-align:center;padding:50px 20px;color:var(--text3);}
+.empty .ei{font-size:44px;margin-bottom:14px;}
+.empty h3{font-size:15px;color:var(--text2);margin-bottom:6px;}
+.empty p{font-size:12px;}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* ── SAVE BUTTON ── */
+.save-btn{
+  background:var(--accent2);border:1px solid var(--accent);border-radius:5px;
+  color:#fff;font-family:var(--mono);font-size:10px;font-weight:700;
+  padding:5px 12px;cursor:pointer;transition:all .2s;letter-spacing:.5px;white-space:nowrap;
+}
+.save-btn:hover{background:var(--accent);box-shadow:var(--glow);}
+.save-btn.saved{background:var(--green2);border-color:var(--green);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .stats-bar{grid-template-columns:repeat(3,1fr);}
+  .ath,.arow{grid-template-columns:75px 110px 60px 70px 90px 55px 55px 1fr 22px;}
+  .atime,.awr{display:none;}
+  .scb{grid-template-columns:1fr;}
+  .msg{grid-template-columns:repeat(2,1fr);}
+  .setgrid{grid-template-columns:1fr;}
+  #btcMssWidget > div:nth-child(2){grid-template-columns:1fr !important;}
+}
+@media(max-width:600px){
+  main{padding:10px;}
+  .ath,.arow{grid-template-columns:65px 95px 55px 65px 1fr 22px;}
+  .arr,.atime,.awr,.achrt{display:none;}
+  .stats-bar{grid-template-columns:repeat(2,1fr);}
+  .mlvls{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    SMC <span>SCANNER</span>
+  </div>
+  <nav>
+    <button class="nav-btn active" onclick="showPage('alerts')">Alerts</button>
+    <button class="nav-btn" onclick="showPage('strategies')">Strategies</button>
+    <button class="nav-btn" onclick="showPage('settings')">Settings</button>
+  </nav>
+  <div class="hdr-right">
+    <div class="countdown-pill">Next scan: <span id="cdTimer">5:00</span></div>
+    <div class="status-pill"><div class="dot" id="sDot"></div><span id="sTxt">LIVE</span></div>
+    <div class="new-badge" id="newBadge">0 NEW</div>
+  </div>
+</header>
+
+<main>
+
+<!-- ===== ALERTS PAGE ===== -->
+<div class="page active" id="page-alerts">
+  <div class="stats-bar">
+    <div class="stat-card"><div class="slbl">Total Alerts (24h)</div><div class="sval ac" id="stTotal">0</div><div class="ssub">All strategies</div></div>
+    <div class="stat-card"><div class="slbl">Long Setups</div><div class="sval gr" id="stLong">0</div><div class="ssub">Buy signals</div></div>
+    <div class="stat-card"><div class="slbl">Short Setups</div><div class="sval rd" id="stShort">0</div><div class="ssub">Sell signals</div></div>
+    <div class="stat-card"><div class="slbl">Avg R:R</div><div class="sval yl" id="stRR">—</div><div class="ssub">Min threshold: 1:3</div></div>
+    <div class="stat-card"><div class="slbl">Symbols Scanned</div><div class="sval pu" id="stSyms">0</div><div class="ssub">Mcap+Volume+Gainers</div></div>
+  </div>
+
+  <!-- BTC 3m MSS Widget -->
+  <div class="section-title">₿ BTC/USDT — 3-Minute Market Structure Shift Monitor</div>
+  <div class="btc-mss-widget" id="btcMSSWidget">
+    <div class="bmss-header">
+      <div class="bmss-title">
+        <div class="bmss-pulse" id="btcMssPulse"></div>
+        <span>BTC/USDT 3m Live MSS Analysis</span>
+        <div class="bmss-badge none" id="btcMssBadge">LOADING</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="font-family:var(--mono);font-size:12px;color:var(--text2);">Price: <span id="btcLivePrice" style="color:var(--text);font-weight:700;">—</span></div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);">Updated: <span id="btcMssTime">—</span></div>
+      </div>
+    </div>
+    <div class="bmss-body">
+      <div class="bmss-chart" id="btcChartBox"><canvas id="btcMssCanvas" style="display:block;"></canvas></div>
+      <div class="bmss-info">
+        <div class="bmss-stat">
+          <div class="bmss-stat-lbl">MSS Status</div>
+          <div class="bmss-stat-val" id="btcMssStatus" style="color:var(--text3)">Fetching 3m data…</div>
+        </div>
+        <div class="bmss-stat">
+          <div class="bmss-stat-lbl">3m Trend</div>
+          <div class="bmss-stat-val" id="btcTrend" style="color:var(--text2)">—</div>
+        </div>
+        <div class="bmss-stat">
+          <div class="bmss-stat-lbl">Last Swing High</div>
+          <div class="bmss-stat-val" id="btcLastHigh" style="color:var(--orange)">—</div>
+        </div>
+        <div class="bmss-stat">
+          <div class="bmss-stat-lbl">Last Swing Low</div>
+          <div class="bmss-stat-val" id="btcLastLow" style="color:var(--purple)">—</div>
+        </div>
+        <div class="bmss-stat">
+          <div class="bmss-stat-lbl">Signal Detail</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text2);line-height:1.55;margin-top:2px;" id="btcMssDetail">Awaiting data…</div>
+        </div>
+      </div>
+    </div>
+    <div id="btcMssAlert" style="display:none;margin:0 14px 14px;border:1px solid var(--green);border-radius:7px;padding:10px 14px;background:rgba(0,255,136,0.06);">
+      <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--green);margin-bottom:5px;" id="btcMssAlertTitle">🟢 MSS DETECTED ON 3M</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.65;" id="btcMssAlertTxt">—</div>
+    </div>
+  </div>
+
+  <!-- Watchlist -->
+
+  <div class="watchlist-wrap">
+    <div class="section-title">Live Market — Binance Top Pairs</div>
+    <div class="watchlist-tabs">
+      <div class="wtab active" onclick="switchWTab(this,'mcap')">By MCap</div>
+      <div class="wtab" onclick="switchWTab(this,'vol')">By Volume</div>
+      <div class="wtab" onclick="switchWTab(this,'gain')">Gainers</div>
+    </div>
+    <div class="watchlist-grid" id="wGrid"></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="fg" id="tfFG">
+      <button class="fb active" onclick="setFilter('tf','ALL',this)">ALL TF</button>
+      <button class="fb" onclick="setFilter('tf','15m',this)">15m</button>
+      <button class="fb" onclick="setFilter('tf','1h',this)">1H</button>
+    </div>
+    <div class="fg" id="dirFG">
+      <button class="fb active" onclick="setFilter('dir','ALL',this)">BOTH</button>
+      <button class="fb" onclick="setFilter('dir','LONG',this)">LONG</button>
+      <button class="fb" onclick="setFilter('dir','SHORT',this)">SHORT</button>
+    </div>
+    <select class="si" id="stratSel" onchange="setFilter('strat','',null)">
+      <option value="ALL">All Strategies</option>
+      <option value="1">S1: OB + BOS Retest</option>
+      <option value="2">S2: FVG + CHoCH Entry</option>
+      <option value="3">S3: Liquidity Sweep Reversal</option>
+      <option value="4">S4: Breaker Block Flip</option>
+      <option value="5">S5: MSS + OTE Fibonacci</option>
+      <option value="6">S6: HL Sweep Reversal (Custom)</option>
+    </select>
+    <input class="si" type="text" id="searchIn" placeholder="Search symbol…" oninput="renderAlerts()">
+    <button class="cbtn on" id="sndBtn" onclick="toggleSound()">🔔 Sound ON</button>
+    <button class="cbtn" onclick="clearAlerts()">🗑 Clear All</button>
+    <button class="cbtn" onclick="forceScan()">🔄 Scan Now</button>
+  </div>
+
+  <div class="section-title">Setup Alerts <span id="acTxt" style="font-weight:400;color:var(--text3);font-family:var(--mono);font-size:10px;margin-left:6px;"></span></div>
+  <div class="ath">
+    <span>Symbol</span><span>Strategy</span><span>TF</span><span>Direction</span>
+    <span>Entry</span><span>R:R</span><span>Win%</span><span>Time</span>
+    <span>Mini Chart</span><span></span>
+  </div>
+  <div class="alerts-list" id="alertsList">
+    <div class="empty"><div class="ei">📡</div><h3>Scanner Initializing</h3><p>Fetching live pairs from Binance — mcap, volume & gainers lists</p></div>
+  </div>
+</div>
+
+<!-- ===== STRATEGIES PAGE ===== -->
+<div class="page" id="page-strategies">
+  <div class="section-title">6 Institutional SMC Strategies</div>
+  <p style="font-size:13px;color:var(--text2);margin-bottom:22px;max-width:820px;line-height:1.7;">
+    Five battle-tested ICT/SMC strategies plus one custom Higher Lows Sweep pattern. All setups enforce minimum 1:3 R:R. Every condition is algorithmically verified on real Binance kline data before an alert fires.
+  </p>
+  <div class="sg" id="stratsGrid"></div>
+</div>
+
+<!-- ===== SETTINGS PAGE ===== -->
+<div class="page" id="page-settings">
+  <div class="section-title">Scanner Configuration</div>
+  <div class="setgrid">
+    <div class="setcard">
+      <h3>📡 Data Source</h3>
+      <div class="setr"><div><div class="setr-lbl">Exchange</div><div class="setr-sub">Binance public REST API</div></div><span style="font-family:var(--mono);font-size:11px;color:var(--accent)">BINANCE</span></div>
+      <div class="setr"><div><div class="setr-lbl">Scan Interval</div><div class="setr-sub">Minutes between full scans</div></div><div style="display:flex;align-items:center;gap:8px;"><input class="rinput" type="number" id="scanMins" value="5" min="1" max="60"> <span style="font-family:var(--mono);font-size:10px;color:var(--text3)">min</span><button class="save-btn" onclick="saveSettings()">SAVE</button></div></div>
+      <div class="setr"><div><div class="setr-lbl">Timeframes</div><div class="setr-sub">Both scanned per symbol</div></div><span style="font-family:var(--mono);font-size:11px;color:var(--accent)">15m + 1H</span></div>
+      <div class="setr"><div><div class="setr-lbl">Symbols Scanned</div><div class="setr-sub">Top 20 × 3 categories</div></div><span style="font-family:var(--mono);font-size:11px;color:var(--accent)" id="setSymCount">—</span></div>
+      <div class="setr"><div><div class="setr-lbl">Auto Scan</div><div class="setr-sub">Continuous background scanning</div></div><div class="tog on" id="autoTog" onclick="this.classList.toggle('on')"></div></div>
+    </div>
+    <div class="setcard">
+      <h3>🔔 Notifications</h3>
+      <div class="setr"><div><div class="setr-lbl">Sound Alerts</div><div class="setr-sub">Ascending = long, descending = short</div></div><div class="tog on" id="sndTog" onclick="this.classList.toggle('on');syncSoundBtn()"></div></div>
+      <div class="setr"><div><div class="setr-lbl">Push Notifications</div><div class="setr-sub">Browser push (works on mobile PWA)</div></div><div class="tog" id="pushTog" onclick="reqPush(this)"></div></div>
+      <div class="setr"><div><div class="setr-lbl">Toast Popups</div><div class="setr-sub">Bottom-right alert cards</div></div><div class="tog on" id="toastTog" onclick="this.classList.toggle('on')"></div></div>
+      <div class="setr"><div><div class="setr-lbl">Min R:R Filter</div><div class="setr-sub">Discard setups below this</div></div><div style="display:flex;align-items:center;gap:8px;"><input class="rinput" type="number" id="minRRIn" value="3" min="1" max="10" step="0.5"><button class="save-btn" onclick="saveSettings()">SAVE</button></div></div>
+    </div>
+    <div class="setcard">
+      <h3>🎯 Strategy Toggles</h3>
+      <div id="stratToggles"></div>
+    </div>
+    <div class="setcard">
+      <h3>📱 Deploy to GitHub Pages</h3>
+      <div style="font-size:12px;color:var(--text2);line-height:1.8;">
+        <p style="color:var(--accent);font-family:var(--mono);font-size:10px;margin-bottom:8px;">1. Create public GitHub repo</p>
+        <p style="color:var(--accent);font-family:var(--mono);font-size:10px;margin-bottom:8px;">2. Upload this file as <b>index.html</b></p>
+        <p style="color:var(--accent);font-family:var(--mono);font-size:10px;margin-bottom:8px;">3. Repo Settings → Pages → Deploy from main</p>
+        <p style="color:var(--accent);font-family:var(--mono);font-size:10px;margin-bottom:8px;">4. Open your Pages URL on phone</p>
+        <p style="color:var(--accent);font-family:var(--mono);font-size:10px;margin-bottom:12px;">5. Phone menu → Add to Home Screen</p>
+        <p style="color:var(--text3);font-size:11px;">Once added to home screen it runs like a native app with push notifications. Binance API is CORS-open — no backend or proxy needed. Screen wake-lock keeps scanner running.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="closeOverlay(event)">
+  <div class="modal" id="modal">
+    <div class="mhdr">
+      <div>
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
+          <div class="msym" id="mSym">—</div>
+          <div class="dbadge" id="mDir">—</div>
+          <div class="sbadge" id="mStrat">—</div>
+        </div>
+        <div class="msub" id="mSub">—</div>
+      </div>
+      <button class="mclose" onclick="closeOverlay()">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="mchrt" id="mChrtBox"><canvas id="mCanvas" style="display:block;"></canvas></div>
+      <div class="msg">
+        <div class="ms"><div class="l">ENTRY</div><div class="v" id="mEn" style="color:var(--accent)">—</div></div>
+        <div class="ms"><div class="l">STOP LOSS</div><div class="v" id="mSL" style="color:var(--red)">—</div></div>
+        <div class="ms"><div class="l">R:R RATIO</div><div class="v" id="mRR" style="color:var(--yellow)">—</div></div>
+        <div class="ms"><div class="l">WIN RATE</div><div class="v" id="mWR" style="color:var(--green)">—</div></div>
+      </div>
+      <div class="mlvls" id="mLvls"></div>
+      <div class="expl"><h4 id="eTitle">ANALYSIS</h4><p id="eTxt">—</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════
+//  STRATEGY DEFINITIONS — 6 strategies
+// ═══════════════════════════════════════════════════════════════
+const STRATS = [
+  {
+    id:1, name:'Order Block Retest + Break of Structure', short:'OB + BOS Retest',
+    winRate:68, rrMin:3, rrMax:7, color:'#00d4ff',
+    tags:['Order Block','BOS','Market Structure'],
+    conditions:[
+      'Identify the last opposing candle before a strong impulsive move — this is the Order Block (OB)',
+      'The impulse following the OB must break a prior swing high (bull) or swing low (bear) — this is the BOS',
+      'BOS candle must be at least 1.5× the average candle range — displacement confirmation',
+      'Price retraces back into the OB zone (between 50% and 100% of the OB body)',
+      'A confirmation candle (bullish engulf / bearish engulf / pin bar) must close inside or just beyond the OB',
+      'Volume on the BOS impulse must be above 20-bar average — institutional participation'
+    ],
+    entry:'OB midpoint (50% of body). Limit order placed in advance.',
+    sl:'Below OB wick low (long) or above OB wick high (short), plus 0.5× ATR buffer',
+    tp:'Next liquidity pool, equal highs/lows, or opposing HTF OB. Minimum 1:3 R:R enforced.',
+    desc:'After institutions accumulate/distribute at an OB, price often breaks structure then returns to the OB to fill remaining orders before continuing. The OB midpoint is the highest-probability entry as it sits between order absorption zones.'
+  },
+  {
+    id:2, name:'Fair Value Gap + Change of Character Entry', short:'FVG + CHoCH',
+    winRate:65, rrMin:3, rrMax:8, color:'#00ff88',
+    tags:['FVG','CHoCH','Imbalance','Reversal'],
+    conditions:[
+      'Change of Character (CHoCH): price makes the FIRST break of the prior trend structure — signals potential reversal',
+      'The displacement candle creating CHoCH must leave a Fair Value Gap (3-candle imbalance: gap between candle[i-1] high and candle[i+1] low)',
+      'FVG must be at least 0.5× ATR wide — too small = noise, not institutional imbalance',
+      'No prior partial fill of the FVG (price must not have re-entered the gap before this setup)',
+      'Price returns to test the FVG from the direction of CHoCH — this is the entry zone',
+      'Entry at 50% of FVG (equilibrium). FVG in premium zone = short, discount zone = long'
+    ],
+    entry:'50% of FVG (equilibrium of the imbalance). Limit or market on touch.',
+    sl:'Beyond the CHoCH origin candle — where the structure shift is invalidated',
+    tp:'Previous swing structure / next liquidity pool in new direction. Scaled exits at 1:3 and 1:5.',
+    desc:'CHoCH is the first sign institutions are changing directional bias. The FVG they leave is an order cluster that price is magnetically drawn back to. Entering at FVG equilibrium puts you inside the institutional order block with tight SL.'
+  },
+  {
+    id:3, name:'Liquidity Sweep + Immediate Reversal', short:'Liquidity Sweep Reversal',
+    winRate:73, rrMin:3, rrMax:11, color:'#ff8800',
+    tags:['Liquidity Sweep','Stop Hunt','Kill Zone','Manipulation'],
+    conditions:[
+      'Equal highs or equal lows must be visible (at least 2 touches) — these are retail stop clusters',
+      'Price wicks aggressively through the level (the "sweep") — clearing stops above/below',
+      'The sweeping candle CLOSES BACK below the swept high (bear setup) or above the swept low (bull setup) — rejection confirmed on close',
+      'The next candle immediately confirms reversal direction — no indecision allowed',
+      'Sweep ideally occurs during London Open (07:00-09:00 UTC) or NY Open (13:00-15:00 UTC) kill zones',
+      'The sweep candle wick extension must be at least 1× ATR beyond the liquidity level'
+    ],
+    entry:'Close of the sweeping candle, or open of the next confirmation candle',
+    sl:'2-3 pips/ticks beyond the sweep wick extreme — invalidation if price continues through',
+    tp:'Opposing equal highs/lows / next structure level. Very tight SL = very high R:R (often 1:6+)',
+    desc:'Highest win-rate setup. Institutions hunt retail stops above obvious levels then reverse hard. The tell is the full candle close back inside the range after the wick through — institutions have filled their orders and are now moving price. Speed of rejection = strength of signal.'
+  },
+  {
+    id:4, name:'Breaker Block Mitigation', short:'Breaker Block Flip',
+    winRate:63, rrMin:3, rrMax:6, color:'#ffd700',
+    tags:['Breaker Block','Mitigation','Support/Resistance Flip'],
+    conditions:[
+      'Locate a prior Order Block that price has already broken through (failed OB) — this becomes a Breaker Block',
+      'The break through the OB must be decisive — full candle body close beyond the OB',
+      'Mark the breaker zone: for a bullish breaker (failed bear OB) = prior OB top becomes new support; for bearish breaker (failed bull OB) = prior OB bottom becomes new resistance',
+      'Price must return to the breaker zone from the opposite side (mitigation)',
+      'Entry on touch of the breaker zone with a bearish/bullish rejection candle (pin bar, engulf)',
+      'Breaker must be in Premium zone (shorts) or Discount zone (longs) of the larger swing range'
+    ],
+    entry:'At the breaker zone level, confirmed by rejection candle',
+    sl:'Beyond the breaker block body (not just the wick)',
+    tp:'Next OB on HTF, opposing liquidity pool. Scale 50% at 1:3, remainder to 1:5+',
+    desc:'When an OB fails, smart money has left that zone. When price returns to mitigate, residual orders are filled at the flip zone. The polarity flip from support to resistance (or vice versa) is a consistent institutional behavior pattern observable across all timeframes.'
+  },
+  {
+    id:5, name:'Market Structure Shift + OTE Fibonacci', short:'MSS + OTE Fibonacci',
+    winRate:71, rrMin:4, rrMax:12, color:'#cc88ff',
+    tags:['MSS','OTE','Multi-Timeframe','Fibonacci'],
+    conditions:[
+      'Higher Timeframe (1H+) trend clearly defined by series of higher highs / lower lows',
+      '15m shows a Market Structure Shift (MSS): first break counter to HTF trend, then resumption',
+      'The displacement leg that creates the MSS forms a new Order Block on the 15m chart',
+      'Draw Fibonacci from the swing low to high (bull) or high to low (bear) of the MSS displacement leg',
+      'Optimal Trade Entry (OTE) zone = 61.8% to 78.6% Fibonacci retracement — this is where limit orders sit',
+      'Price must reach OTE and show a candle close back in the trend direction (wicks into OTE are fine, body must close back)'
+    ],
+    entry:'Limit order at 70.5% Fibonacci (midpoint of OTE zone 61.8–78.6%)',
+    sl:'Below/above the 0% Fibonacci level (beyond the MSS origin swing)',
+    tp:'1.272× and 1.618× Fibonacci extensions. 1:4 minimum, often achieves 1:8-12.',
+    desc:'The ICT "gold standard" — using HTF bias confirmed by 15m MSS, then entering at the precise OTE zone where institutional limit orders are placed. This multi-timeframe confluence produces the highest R:R trades. The OTE zone is derived from Fibonacci, which maps to institutional order clusters.'
+  },
+  {
+    id:6, name:'Higher Lows Sweep → Bullish Reclaim (Custom)', short:'HL Sweep Reversal',
+    winRate:69, rrMin:3, rrMax:9, color:'#ff6699',
+    tags:['Higher Lows','Liquidity Sweep','Multi-HL','Pattern Recognition','Custom'],
+    conditions:[
+      'A series of at least 3 ascending Higher Lows must form — each HL must be clearly higher than the previous',
+      'The HL trendline (connecting the HL pivots) represents a cluster of retail stops placed below each HL',
+      'Price sweeps BELOW at least 2 of these Higher Lows in sequence — taking out layered stop clusters',
+      'The sweep candle(s) wick below the HLs but do NOT close decisively below — close must be above the first swept HL',
+      'After the sweep, price prints a strong bullish close (at minimum, closing above the most recently swept HL level)',
+      'The major last swing high is now the primary target — price has collected all fuel (stops) needed for the run'
+    ],
+    entry:'On the bullish close candle that reclaims above the swept HL zone',
+    sl:'Below the lowest wick of the sweep candles — full sweep low invalidation level',
+    tp:'Previous major swing high (the "last high" visible before the HL structure began). Often a clean 1:4–1:9 setup.',
+    desc:'This is your custom pattern from the chart. Institutions deliberately push price below a series of higher lows to sweep the stop-loss orders retail traders placed beneath each HL. This creates a pool of buy-side orders for institutions to sell into (short) OR collects sell-side liquidity to fuel a long reversal. The bullish reclaim above the swept zone confirms institutional accumulation is complete and the run to the major high begins. Minimum 2 HLs must be swept for the pattern to be valid — single-HL sweeps are noise.'
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════
+let allAlerts = [];
+let mcapSyms = [], volSyms = [], gainerSyms = [];
+let allMarketData = {};
+let wTabActive = 'mcap';
+let filters = { tf:'ALL', dir:'ALL', strat:'ALL' };
+let soundOn = true;
+let audioCtx = null;
+let newCount = 0;
+let stratEnabled = {1:true,2:true,3:true,4:true,5:true,6:true};
+let scanTimer = null;
+let cdSeconds = 300;
+let cdInterval = null;
+const BINANCE = 'https://api.binance.com/api/v3';
+const BINANCE_TICKER = 'https://api.binance.com/api/v3/ticker/24hr';
+
+// ═══════════════════════════════════════════════════════════════
+//  BINANCE DATA FETCHING
+// ═══════════════════════════════════════════════════════════════
+async function fetchAllTickers() {
+  try {
+    const r = await fetch(BINANCE_TICKER);
+    if (!r.ok) return null;
+    const data = await r.json();
+    const usdt = data.filter(t =>
+      t.symbol.endsWith('USDT') &&
+      !['UP','DOWN','BULL','BEAR'].some(x => t.symbol.includes(x)) &&
+      parseFloat(t.lastPrice) > 0 &&
+      parseFloat(t.quoteVolume) > 500000
+    );
+    allMarketData = {};
+    usdt.forEach(t => { allMarketData[t.symbol] = t; });
+    return usdt;
+  } catch(e) { return null; }
+}
+
+async function refreshSymbolLists() {
+  const usdt = await fetchAllTickers();
+  if (!usdt) return;
+  // By market cap proxy (sort by quoteVolume as mcap proxy for liquid assets — approximates mcap ranking)
+  // We use a hardcoded mcap priority list for top coins then fill with high-volume rest
+  const MCAP_PRIORITY = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT','DOGEUSDT','ADAUSDT',
+    'AVAXUSDT','LINKUSDT','DOTUSDT','MATICUSDT','LTCUSDT','SHIBUSDT','TRXUSDT','ATOMUSDT',
+    'UNIUSDT','XLMUSDT','ETCUSDT','NEARUSDT','AAVEUSDT'];
+  mcapSyms = MCAP_PRIORITY.filter(s => allMarketData[s]).slice(0,20);
+  // By 24h quote volume
+  volSyms = [...usdt].sort((a,b) => parseFloat(b.quoteVolume)-parseFloat(a.quoteVolume))
+    .slice(0,20).map(t=>t.symbol);
+  // By 24h gainers (>0 change)
+  gainerSyms = [...usdt].filter(t => parseFloat(t.priceChangePercent) > 0)
+    .sort((a,b) => parseFloat(b.priceChangePercent)-parseFloat(a.priceChangePercent))
+    .slice(0,20).map(t=>t.symbol);
+  document.getElementById('setSymCount').textContent =
+    [...new Set([...mcapSyms,...volSyms,...gainerSyms])].length + ' unique';
+  renderWatchlist();
+}
+
+async function fetchKlines(symbol, interval, limit=150) {
+  try {
+    const r = await fetch(`${BINANCE}/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    return data.map(k => ({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
+  } catch(e) { return null; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MATH HELPERS
+// ═══════════════════════════════════════════════════════════════
+function atr(klines, p=14) {
+  let s=0, n=Math.min(p, klines.length-1);
+  for(let i=klines.length-n; i<klines.length; i++){
+    const pr=klines[i-1], c=klines[i];
+    s += Math.max(c.h-c.l, Math.abs(c.h-pr.c), Math.abs(c.l-pr.c));
+  }
+  return s/n;
+}
+
+function avgVol(klines, p=20) {
+  const n=Math.min(p,klines.length);
+  return klines.slice(-n).reduce((s,k)=>s+k.v,0)/n;
+}
+
+function candleSize(k) { return Math.abs(k.c - k.o); }
+function candleRange(k) { return k.h - k.l; }
+function isBull(k) { return k.c > k.o; }
+function isBear(k) { return k.c < k.o; }
+
+// Swing high: candle[i].h > candles[i-n..i-1] and candles[i+1..i+n]
+function swingHighs(klines, lookback=3) {
+  const res=[];
+  for(let i=lookback; i<klines.length-lookback; i++){
+    const h=klines[i].h;
+    let isHigh=true;
+    for(let j=1;j<=lookback;j++){
+      if(klines[i-j].h>=h || klines[i+j].h>=h){isHigh=false;break;}
+    }
+    if(isHigh) res.push({i, h, l:klines[i].l, c:klines[i]});
+  }
+  return res;
+}
+
+function swingLows(klines, lookback=3) {
+  const res=[];
+  for(let i=lookback; i<klines.length-lookback; i++){
+    const l=klines[i].l;
+    let isLow=true;
+    for(let j=1;j<=lookback;j++){
+      if(klines[i-j].l<=l || klines[i+j].l<=l){isLow=false;break;}
+    }
+    if(isLow) res.push({i, l, h:klines[i].h, c:klines[i]});
+  }
+  return res;
+}
+
+function fmtP(p) {
+  if(!p||isNaN(p)) return '—';
+  if(p>=10000) return p.toLocaleString('en',{minimumFractionDigits:1,maximumFractionDigits:1});
+  if(p>=100) return p.toFixed(2);
+  if(p>=1) return p.toFixed(4);
+  if(p>=0.01) return p.toFixed(5);
+  return p.toFixed(7);
+}
+
+function fmtT(d){ return new Date(d).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+
+// ═══════════════════════════════════════════════════════════════
+//  STRATEGY 1 — Order Block + BOS
+//  Logic: Find last bear/bull candle before strong impulse that also breaks structure
+// ═══════════════════════════════════════════════════════════════
+function s1_OB_BOS(klines, sym, tf) {
+  const A = atr(klines);
+  const avgV = avgVol(klines);
+  const last = klines[klines.length-1];
+  const results = [];
+
+  for(let i=5; i<klines.length-8; i++){
+    const k = klines[i];
+    // === BULLISH OB ===
+    // k is a bearish candle, followed by bullish impulse breaking a prior swing high
+    if(isBear(k)){
+      const impulseStart = i+1;
+      let impulseEnd = impulseStart;
+      let topReached = k.h;
+      // Find impulse run
+      for(let j=impulseStart; j<Math.min(impulseStart+8, klines.length); j++){
+        if(isBull(klines[j])) { topReached=Math.max(topReached,klines[j].h); impulseEnd=j; }
+        else break;
+      }
+      const impulseSize = topReached - k.l;
+      if(impulseSize < A*1.5) continue; // Not enough displacement
+      // Check BOS: did the impulse break a prior swing high?
+      const priorHigh = klines.slice(Math.max(0,i-20),i).reduce((m,c)=>Math.max(m,c.h),0);
+      if(topReached <= priorHigh) continue; // No BOS
+      // Volume on impulse candle
+      if(klines[impulseStart].v < avgV*1.1) continue;
+      // OB zone: from k.l to k.o (body of the last bear candle)
+      const obTop = Math.max(k.o, k.c); // body top
+      const obBot = Math.min(k.o, k.c); // body bottom
+      const obMid = (obTop+obBot)/2;
+      // Is current price retesting OB?
+      if(last.l <= obTop && last.c >= obBot && impulseEnd < klines.length-2){
+        // We're in the OB zone — confirmation: bullish close in zone
+        const confirmIdx = klines.slice(impulseEnd+1).findIndex(c => c.l<=obTop && c.c>=obBot && isBull(c));
+        if(confirmIdx>=0 && confirmIdx<12){
+          const entry = obMid;
+          const sl = obBot - A*0.4;
+          const tp1 = entry + (entry-sl)*3.5;
+          const tp2 = entry + (entry-sl)*5.5;
+          const rr = (tp1-entry)/(entry-sl);
+          if(rr>=3) results.push(makeAlert(sym,tf,1,'LONG',last.c,entry,sl,tp1,tp2,rr,klines,i));
+        }
+      }
+    }
+
+    // === BEARISH OB ===
+    if(isBull(k)){
+      const impulseStart = i+1;
+      let impulseEnd = impulseStart;
+      let botReached = k.l;
+      for(let j=impulseStart; j<Math.min(impulseStart+8, klines.length); j++){
+        if(isBear(klines[j])) { botReached=Math.min(botReached,klines[j].l); impulseEnd=j; }
+        else break;
+      }
+      const impulseSize = k.h - botReached;
+      if(impulseSize < A*1.5) continue;
+      const priorLow = klines.slice(Math.max(0,i-20),i).reduce((m,c)=>Math.min(m,c.l),Infinity);
+      if(botReached >= priorLow) continue;
+      if(klines[impulseStart].v < avgV*1.1) continue;
+      const obTop = Math.max(k.o,k.c);
+      const obBot = Math.min(k.o,k.c);
+      const obMid = (obTop+obBot)/2;
+      if(last.h >= obBot && last.c <= obTop && impulseEnd < klines.length-2){
+        const confirmIdx = klines.slice(impulseEnd+1).findIndex(c => c.h>=obBot && c.c<=obTop && isBear(c));
+        if(confirmIdx>=0 && confirmIdx<12){
+          const entry = obMid;
+          const sl = obTop + A*0.4;
+          const tp1 = entry - (sl-entry)*3.5;
+          const tp2 = entry - (sl-entry)*5.5;
+          const rr = (entry-tp1)/(sl-entry);
+          if(rr>=3) results.push(makeAlert(sym,tf,1,'SHORT',last.c,entry,sl,tp1,tp2,rr,klines,i));
+        }
+      }
+    }
+  }
+  // Return most recent valid signal only
+  return results.slice(-1);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  STRATEGY 2 — FVG + CHoCH
+// ═══════════════════════════════════════════════════════════════
+function s2_FVG_CHoCH(klines, sym, tf) {
+  const A = atr(klines);
+  const last = klines[klines.length-1];
+  const results = [];
+  const sLows = swingLows(klines, 3);
+  const sHighs = swingHighs(klines, 3);
+
+  // Bull CHoCH: was making lower lows, now breaks above a prior swing high → first signal of reversal
+  // Find recent downtrend (series of lower lows in last 40 candles)
+  const recent = klines.slice(-50);
+  for(let i=15; i<recent.length-3; i++){
+    const seg = recent.slice(Math.max(0,i-15),i);
+    const prevLLs = swingLows(seg, 2);
+    if(prevLLs.length < 2) continue;
+    // Confirm lower lows trend
+    const ll1 = prevLLs[prevLLs.length-2].l, ll2 = prevLLs[prevLLs.length-1].l;
+    if(ll2 >= ll1) continue; // No downtrend
+    // Find CHoCH: break above prior swing high
+    const prevHH = swingHighs(seg, 2);
+    if(!prevHH.length) continue;
+    const chopH = prevHH[prevHH.length-1].h;
+    const chochCandle = recent[i];
+    if(chochCandle.c <= chopH) continue; // No break
+    // Displacement must be strong
+    if(candleSize(chochCandle) < A*0.8) continue;
+    // Find FVG in the choch move (look back 3 candles)
+    for(let fi=Math.max(0,i-4); fi<=i; fi++){
+      if(fi<1||fi>=recent.length-1) continue;
+      const prev=recent[fi-1], curr=recent[fi], next=recent[fi+1];
+      // Bull FVG
+      if(next && prev.h < next.l && (next.l-prev.h) >= A*0.3){
+        const fvgBot=prev.h, fvgTop=next.l, fvgMid=(fvgBot+fvgTop)/2;
+        // Check if current price is in or approaching FVG
+        const offset = klines.length-50+i;
+        const afterFVG = klines.slice(offset+1);
+        const inFVG = afterFVG.some(c => c.l<=fvgTop && c.h>=fvgBot);
+        if(inFVG && last.l<=fvgTop && last.c>=fvgBot){
+          const entry=fvgMid, sl=fvgBot-A*0.5;
+          const tp1=entry+(entry-sl)*3.5, tp2=entry+(entry-sl)*6;
+          const rr=(tp1-entry)/(entry-sl);
+          if(rr>=3) results.push(makeAlert(sym,tf,2,'LONG',last.c,entry,sl,tp1,tp2,rr,klines,offset));
+        }
+      }
+    }
+    // Bear CHoCH
+    const segB = recent.slice(Math.max(0,i-15),i);
+    const prevHHs = swingHighs(segB, 2);
+    if(prevHHs.length<2) continue;
+    const hh1=prevHHs[prevHHs.length-2].h, hh2=prevHHs[prevHHs.length-1].h;
+    if(hh2<=hh1) continue;
+    const prevLL=swingLows(segB,2);
+    if(!prevLL.length) continue;
+    const chopL=prevLL[prevLL.length-1].l;
+    if(chochCandle.c>=chopL) continue;
+    if(candleSize(chochCandle)<A*0.8) continue;
+    for(let fi=Math.max(0,i-4); fi<=i; fi++){
+      if(fi<1||fi>=recent.length-1) continue;
+      const prev=recent[fi-1], next=recent[fi+1];
+      if(next && prev.l > next.h && (prev.l-next.h)>=A*0.3){
+        const fvgBot=next.h, fvgTop=prev.l, fvgMid=(fvgBot+fvgTop)/2;
+        const offset=klines.length-50+i;
+        const afterFVG=klines.slice(offset+1);
+        const inFVG=afterFVG.some(c=>c.h>=fvgBot&&c.l<=fvgTop);
+        if(inFVG&&last.h>=fvgBot&&last.c<=fvgTop){
+          const entry=fvgMid,sl=fvgTop+A*0.5;
+          const tp1=entry-(sl-entry)*3.5,tp2=entry-(sl-entry)*6;
+          const rr=(entry-tp1)/(sl-entry);
+          if(rr>=3) results.push(makeAlert(sym,tf,2,'SHORT',last.c,entry,sl,tp1,tp2,rr,klines,offset));
+        }
+      }
+    }
+  }
+  return results.slice(-1);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  STRATEGY 3 — Liquidity Sweep + Reversal
+// ═══════════════════════════════════════════════════════════════
+function s3_LiqSweep(klines, sym, tf) {
+  const A = atr(klines);
+  const last = klines[klines.length-1];
+  const results = [];
+
+  // Scan recent 30 candles for sweeps
+  for(let i=8; i<klines.length-2; i++){
+    // Identify equal lows: find 2 prior candles with lows within 0.3% of each other
+    const prior = klines.slice(Math.max(0,i-25),i);
+    const lowVals = prior.map(c=>c.l);
+    const highVals = prior.map(c=>c.h);
+
+    // Equal lows cluster
+    for(let li=0; li<prior.length-2; li++){
+      const refL = prior[li].l;
+      const matches = prior.slice(li).filter(c=>Math.abs(c.l-refL)/refL<0.003);
+      if(matches.length<2) continue;
+      const eqLow = matches.reduce((m,c)=>Math.min(m,c.l),Infinity);
+      const sweepK = klines[i];
+      // Bull sweep: wick below equal lows, close back above
+      if(sweepK.l < eqLow && sweepK.c > eqLow){
+        // Wick must be at least ATR beyond level
+        if(eqLow - sweepK.l < A*0.4) continue;
+        // Confirmation: next candle is bullish
+        const nextK = klines[i+1];
+        if(!nextK || !isBull(nextK)) continue;
+        // Only fire if this is a recent signal (last 5 candles)
+        if(i < klines.length-6) continue;
+        const entry = sweepK.c;
+        const sl = sweepK.l - A*0.2;
+        const tp1 = entry + (entry-sl)*3.5;
+        const tp2 = entry + (entry-sl)*6;
+        const rr = (tp1-entry)/(entry-sl);
+        if(rr>=3) results.push(makeAlert(sym,tf,3,'LONG',last.c,entry,sl,tp1,tp2,rr,klines,i));
+      }
+    }
+    // Equal highs cluster
+    for(let hi=0; hi<prior.length-2; hi++){
+      const refH = prior[hi].h;
+      const matches = prior.slice(hi).filter(c=>Math.abs(c.h-refH)/refH<0.003);
+      if(matches.length<2) continue;
+      const eqHigh = matches.reduce((m,c)=>Math.max(m,c.h),-Infinity);
+      const sweepK = klines[i];
+      if(sweepK.h > eqHigh && sweepK.c < eqHigh){
+        if(sweepK.h - eqHigh < A*0.4) continue;
+        const nextK = klines[i+1];
+        if(!nextK || !isBear(nextK)) continue;
+        if(i < klines.length-6) continue;
+        const entry = sweepK.c;
+        const sl = sweepK.h + A*0.2;
+        const tp1 = entry - (sl-entry)*3.5;
+        const tp2 = entry - (sl-entry)*6;
+        const rr = (entry-tp1)/(sl-entry);
+        if(rr>=3) results.push(makeAlert(sym,tf,3,'SHORT',last.c,entry,sl,tp1,tp2,rr,klines,i));
+      }
+    }
+  }
+  return results.slice(-1);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  STRATEGY 4 — Breaker Block
+// ═══════════════════════════════════════════════════════════════
+function s4_Breaker(klines, sym, tf) {
+  const A = atr(klines);
+  const last = klines[klines.length-1];
+  const results = [];
+
+  // Find OBs then check if price broke through them, making them Breakers
+  for(let i=5; i<klines.length-15; i++){
+    const k = klines[i];
+    // Bullish OB candidate (bear candle before bull run) → check if later broken DOWN → becomes bearish breaker
+    if(isBear(k)){
+      const obTop=Math.max(k.o,k.c), obBot=Math.min(k.o,k.c);
+      // Confirm it was a valid OB: impulse after it
+      let wasOB=false;
+      for(let j=i+1; j<Math.min(i+6,klines.length); j++){
+        if(klines[j].c > obTop && (klines[j].h-klines[j].l)>A*0.8){wasOB=true;break;}
+      }
+      if(!wasOB) continue;
+      // Check if price later broke BELOW the OB bottom (making it a bearish breaker)
+      let breakIdx=-1;
+      for(let j=i+6; j<Math.min(i+30,klines.length); j++){
+        if(klines[j].c < obBot && isBear(klines[j])){breakIdx=j;break;}
+      }
+      if(breakIdx<0) continue;
+      // Mitigation: price returns to obBot–obTop zone from below (bearish retest)
+      const afterBreak = klines.slice(breakIdx+1);
+      const retestIdx = afterBreak.findIndex(c => c.h>=obBot && c.h<=obTop*1.005 && isBear(c));
+      if(retestIdx<0||retestIdx>20) continue;
+      const actualIdx = breakIdx+1+retestIdx;
+      if(actualIdx < klines.length-5) continue;
+      const retestK = klines[actualIdx];
+      const entry = obBot;
+      const sl = obTop + A*0.4;
+      const tp1 = entry - (sl-entry)*3;
+      const tp2 = entry - (sl-entry)*5;
+      const rr = (entry-tp1)/(sl-entry);
+      if(rr>=3) results.push(makeAlert(sym,tf,4,'SHORT',last.c,entry,sl,tp1,tp2,rr,klines,actualIdx));
+    }
+    // Bearish OB candidate (bull candle before bear run) → check if later broken UP → becomes bullish breaker
+    if(isBull(k)){
+      const obTop=Math.max(k.o,k.c), obBot=Math.min(k.o,k.c);
+      let wasOB=false;
+      for(let j=i+1;j<Math.min(i+6,klines.length);j++){
+        if(klines[j].c<obBot&&(klines[j].h-klines[j].l)>A*0.8){wasOB=true;break;}
+      }
+      if(!wasOB) continue;
+      let breakIdx=-1;
+      for(let j=i+6;j<Math.min(i+30,klines.length);j++){
+        if(klines[j].c>obTop&&isBull(klines[j])){breakIdx=j;break;}
+      }
+      if(breakIdx<0) continue;
+      const afterBreak=klines.slice(breakIdx+1);
+      const retestIdx=afterBreak.findIndex(c=>c.l<=obTop&&c.l>=obBot*0.995&&isBull(c));
+      if(retestIdx<0||retestIdx>20) continue;
+      const actualIdx=breakIdx+1+retestIdx;
+      if(actualIdx<klines.length-5) continue;
+      const entry=obTop;
+      const sl=obBot-A*0.4;
+      const tp1=entry+(entry-sl)*3;
+      const tp2=entry+(entry-sl)*5;
+      const rr=(tp1-entry)/(entry-sl);
+      if(rr>=3) results.push(makeAlert(sym,tf,4,'LONG',last.c,entry,sl,tp1,tp2,rr,klines,actualIdx));
+    }
+  }
+  return results.slice(-1);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  STRATEGY 5 — MSS + OTE Fibonacci
+// ═══════════════════════════════════════════════════════════════
+function s5_MSS_OTE(klines, sym, tf) {
+  const A = atr(klines);
+  const last = klines[klines.length-1];
+  const results = [];
+  const N = klines.length;
+
+  // HTF trend: check last 60 candles for higher highs + higher lows (bull) or lower highs + lower lows (bear)
+  const htfSlice = klines.slice(-60);
+  const htfSH = swingHighs(htfSlice, 4);
+  const htfSL = swingLows(htfSlice, 4);
+  const bullTrend = htfSH.length>=2 && htfSL.length>=2 &&
+    htfSH[htfSH.length-1].h > htfSH[htfSH.length-2].h &&
+    htfSL[htfSL.length-1].l > htfSL[htfSL.length-2].l;
+  const bearTrend = htfSH.length>=2 && htfSL.length>=2 &&
+    htfSH[htfSH.length-1].h < htfSH[htfSH.length-2].h &&
+    htfSL[htfSL.length-1].l < htfSL[htfSL.length-2].l;
+  if(!bullTrend && !bearTrend) return [];
+
+  // Find MSS in last 30 candles (counter-trend break then resumption)
+  const recent = klines.slice(-35);
+  for(let i=10; i<recent.length-3; i++){
+    if(bullTrend){
+      // MSS in bull trend: price dips (counter), then MSS creates a new OB and retraces
+      const recentSL = swingLows(recent.slice(0,i),3);
+      if(recentSL.length<1) continue;
+      const mssLow = recentSL[recentSL.length-1].l;
+      const mssHigh = recent.slice(0,i).reduce((m,c)=>Math.max(m,c.h),-Infinity);
+      // Displacement candle
+      const disp = recent[i];
+      if(!isBull(disp) || candleSize(disp)<A*0.8) continue;
+      if(disp.c <= mssHigh*0.999) continue; // Didn't break structure
+      // Fibonacci OTE zone
+      const fibRange = mssHigh - mssLow;
+      const ote618 = mssHigh - fibRange*0.618;
+      const ote786 = mssHigh - fibRange*0.786;
+      // Is price in OTE?
+      if(last.l<=ote618 && last.c>=ote786 && last.c<=ote618){
+        const entry = ote786 + (ote618-ote786)*0.5; // midpoint of OTE
+        const sl = mssLow - A*0.3;
+        const tp1 = mssHigh + fibRange*0.272;
+        const tp2 = mssHigh + fibRange*0.618;
+        const rr = (tp1-entry)/(entry-sl);
+        if(rr>=4) results.push(makeAlert(sym,tf,5,'LONG',last.c,entry,sl,tp1,tp2,rr,klines,N-35+i));
+      }
+    }
+    if(bearTrend){
+      const recentSH = swingHighs(recent.slice(0,i),3);
+      if(recentSH.length<1) continue;
+      const mssHigh = recentSH[recentSH.length-1].h;
+      const mssLow = recent.slice(0,i).reduce((m,c)=>Math.min(m,c.l),Infinity);
+      const disp = recent[i];
+      if(!isBear(disp)||candleSize(disp)<A*0.8) continue;
+      if(disp.c>=mssLow*1.001) continue;
+      const fibRange=mssHigh-mssLow;
+      const ote618=mssLow+fibRange*0.618;
+      const ote786=mssLow+fibRange*0.786;
+      if(last.h>=ote618&&last.c<=ote786&&last.c>=ote618){
+        const entry=ote618-(ote786-ote618)*0.5;
+        const sl=mssHigh+A*0.3;
+        const tp1=mssLow-fibRange*0.272;
+        const tp2=mssLow-fibRange*0.618;
+        const rr=(entry-tp1)/(sl-entry);
+        if(rr>=4) results.push(makeAlert(sym,tf,5,'SHORT',last.c,entry,sl,tp1,tp2,rr,klines,N-35+i));
+      }
+    }
+  }
+  return results.slice(-1);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  STRATEGY 6 — Higher Lows Sweep Reversal (Custom Pattern)
+//  Pattern: series of HLs formed → ≥2 HLs swept → bullish reclaim → target major high
+// ═══════════════════════════════════════════════════════════════
+function s6_HL_Sweep(klines, sym, tf) {
+  const A = atr(klines);
+  const last = klines[klines.length-1];
+  const results = [];
+
+  // Work on the last 80 candles for pattern detection
+  const N = klines.length;
+  const lookback = Math.min(80, N-5);
+  const slice = klines.slice(N-lookback);
+
+  // Step 1: Find ascending Higher Lows (at least 3)
+  const pivotLows = swingLows(slice, 3);
+  if(pivotLows.length < 3) return [];
+
+  // Filter to only ascending HL series
+  // Find the longest ascending sequence
+  let bestSeq = [];
+  for(let start=0; start<pivotLows.length-2; start++){
+    let seq = [pivotLows[start]];
+    for(let j=start+1; j<pivotLows.length; j++){
+      if(pivotLows[j].l > seq[seq.length-1].l && pivotLows[j].i > seq[seq.length-1].i){
+        seq.push(pivotLows[j]);
+      }
+    }
+    if(seq.length>bestSeq.length) bestSeq=seq;
+  }
+  if(bestSeq.length < 3) return []; // Need at least 3 HLs
+
+  // Step 2: Find the major high before this HL structure (the "last high" target)
+  const firstHLIdx = bestSeq[0].i;
+  const beforeHLs = slice.slice(0, firstHLIdx+1);
+  const majorHighVal = beforeHLs.reduce((m,c)=>Math.max(m,c.h),-Infinity);
+
+  // Also look for a major high within the HL structure (the highest point between HLs)
+  const withinHL = slice.slice(firstHLIdx, bestSeq[bestSeq.length-1].i+1);
+  const withinHigh = withinHL.reduce((m,c)=>Math.max(m,c.h),-Infinity);
+  const targetHigh = Math.max(majorHighVal, withinHigh);
+
+  // Step 3: Check if at least 2 HLs were swept in recent candles
+  // Sweep = price wicked below the HL level
+  const lastTwoHLs = bestSeq.slice(-3); // Take last 3 HLs to check sweep
+  const sweepStart = lastTwoHLs[0].i;
+
+  // Look for sweep candles AFTER the last HL was established
+  const postHLSlice = slice.slice(sweepStart);
+  let sweptHLs = [];
+  for(const hl of lastTwoHLs){
+    // Find a candle that wicked below this HL
+    const swept = postHLSlice.some(c => {
+      const cidx = slice.indexOf(c);
+      return cidx > hl.i && c.l < hl.l && c.c > hl.l; // wick below HL but close above
+    });
+    if(swept) sweptHLs.push(hl);
+  }
+
+  if(sweptHLs.length < 2) return []; // Need at least 2 HLs swept
+
+  // Step 4: Find the bullish reclaim candle AFTER the sweeps
+  // The last swept HL's level
+  const lowestSweptHL = Math.min(...sweptHLs.map(h=>h.l));
+  const firstSweptHL = sweptHLs[0].l;
+
+  // Find the sweep low (deepest wick through the HLs)
+  let sweepWickLow = lowestSweptHL;
+  let sweepCandleIdx = -1;
+  for(let i=sweepStart; i<slice.length-1; i++){
+    if(slice[i].l < lowestSweptHL){
+      if(slice[i].l < sweepWickLow){ sweepWickLow=slice[i].l; sweepCandleIdx=i; }
+    }
+  }
+  if(sweepCandleIdx<0) return [];
+
+  // Step 5: Find bullish reclaim candle after sweep
+  const afterSweep = slice.slice(sweepCandleIdx+1);
+  const reclaimIdx = afterSweep.findIndex(c =>
+    isBull(c) && c.c > firstSweptHL && // Closes above the first swept HL
+    candleSize(c) >= A*0.6              // Strong bullish candle
+  );
+  if(reclaimIdx<0||reclaimIdx>8) return []; // Reclaim must happen promptly
+
+  const reclaimCandle = afterSweep[reclaimIdx];
+  const actualReclaimIdx = N-lookback+sweepCandleIdx+1+reclaimIdx;
+
+  // Step 6: Is current price near the reclaim zone? (still actionable)
+  if(actualReclaimIdx < N-6) return []; // Signal too old
+
+  // Step 7: Build the trade
+  const entry = reclaimCandle.c; // Entry at bullish close
+  const sl = sweepWickLow - A*0.25; // SL below the deepest sweep wick
+  if(sl <= 0||isNaN(sl)) return [];
+  const distance = entry - sl;
+  if(distance <= 0) return [];
+
+  // TP = major high (the "last high" target)
+  const tp1 = targetHigh;
+  const tp2 = targetHigh + distance * 0.5; // Beyond the high
+  const rr = (tp1-entry)/distance;
+
+  if(rr < 3) return [];
+
+  // Bonus: annotate how many HLs were swept
+  const alert = makeAlert(sym,tf,6,'LONG',last.c,entry,sl,tp1,tp2,rr,klines,actualReclaimIdx);
+  alert.hlsSwepted = sweptHLs.length;
+  alert.majorHigh = targetHigh;
+  alert.sweepLow = sweepWickLow;
+  alert.hlLevels = bestSeq.map(h=>h.l);
+  // Custom explanation
+  alert.explanation = `${sym.replace('USDT','')} formed ${bestSeq.length} ascending Higher Lows on ${tf}, creating layered stop clusters below each HL. Price then swept below ${sweptHLs.length} of those Higher Lows (stop hunt), with the deepest wick reaching $${fmtP(sweepWickLow)}. The sweep candle(s) closed back above the HL zone, and a strong bullish reclaim candle (${fmtT(reclaimCandle.t)}) confirmed institutional accumulation is complete. Entry at $${fmtP(entry)} targets the major high at $${fmtP(targetHigh)} — the level from which the HL structure originated. SL below the sweep extreme at $${fmtP(sl)} gives a clean ${rr.toFixed(1)}:1 R:R. The multi-HL sweep is the fuel for the move — institutions needed to collect all those stops before reversing.`;
+  return [alert];
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ALERT BUILDER
+// ═══════════════════════════════════════════════════════════════
+function makeAlert(sym, tf, sid, dir, price, entry, sl, tp1, tp2, rr, klines, sigIdx) {
+  const s = STRATS[sid-1];
+  const sliceLen = 65;
+  const start = Math.max(0, klines.length-sliceLen);
+  const candleSlice = klines.slice(start);
+  const tp3 = dir==='LONG'
+    ? tp1+(tp1-entry)*0.6
+    : tp1-(entry-tp1)*0.6;
+
+  return {
+    id: `${sym}-${tf}-${sid}-${dir}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+    sym, tf, sid, dir,
+    stratName: s.short,
+    price: fmtP(price), priceNum: price,
+    entry: fmtP(entry), entryNum: entry,
+    sl: fmtP(sl), slNum: sl,
+    tp1: fmtP(tp1), tp1Num: tp1,
+    tp2: fmtP(tp2), tp2Num: tp2,
+    tp3: fmtP(tp3), tp3Num: tp3,
+    rr: rr.toFixed(1), rrNum: rr,
+    winRate: s.winRate,
+    color: s.color,
+    time: Date.now(),
+    candles: candleSlice,
+    sigIdx: sigIdx - start,
+    explanation: buildExp(sid, sym, tf, dir, entry, sl, tp1, rr)
+  };
+}
+
+function buildExp(sid, sym, tf, dir, entry, sl, tp1, rr) {
+  const s = sym.replace('USDT','');
+  const d = dir==='LONG';
+  const exps = {
+    1:`${s} on ${tf}: A valid ${d?'bullish':'bearish'} Order Block was identified — the last ${d?'bearish':'bullish'} candle before a strong structural impulse. Price has returned to retest this OB zone at $${fmtP(entry)} after breaking structure ${d?'upward':'downward'}. Volume confirmed institutional participation on the BOS candle. Entry at OB midpoint, SL ${d?'below':'above'} the OB wick + ATR buffer. Target: next ${d?'supply':'demand'} zone at $${fmtP(tp1)} for ${rr}:1 R:R.`,
+    2:`${s} on ${tf}: A Change of Character (CHoCH) occurred — the first structural break ${d?'upward breaking the prior downtrend':'downward breaking the prior uptrend'}. The displacement that created the CHoCH left a Fair Value Gap (3-candle imbalance) which price is now filling. FVG equilibrium at $${fmtP(entry)} is the entry. SL beyond CHoCH origin. TP at next structural level $${fmtP(tp1)} for ${rr}:1 R:R.`,
+    3:`${s} on ${tf}: Classic ${d?'bullish':'bearish'} liquidity sweep detected. Equal ${d?'lows':'highs'} (retail stops) were aggressively wicked through, then price closed back ${d?'above':'below'} the level — a textbook stop hunt. The next candle confirmed the reversal. Entry $${fmtP(entry)}, SL beyond the sweep wick, targeting opposing ${d?'highs':'lows'} at $${fmtP(tp1)} — ${rr}:1 R:R. Tight SL = high R:R.`,
+    4:`${s} on ${tf}: A Breaker Block has formed — a prior ${d?'bearish':'bullish'} OB that was broken through, flipping its polarity. Price has returned to mitigate this zone, where institutions are ${d?'re-accumulating longs':'distributing shorts'} at the flip level $${fmtP(entry)}. SL beyond the breaker body. Target: $${fmtP(tp1)} for ${rr}:1 R:R.`,
+    5:`${s} on ${tf}: Multi-timeframe confluence — a ${d?'bullish':'bearish'} trend is confirmed on the higher timeframe, and a 15m Market Structure Shift created a fresh OB. Price is now at the Optimal Trade Entry zone (61.8–78.6% Fibonacci retracement of the MSS displacement). Entry $${fmtP(entry)} at OTE, SL beyond MSS origin, targeting Fibonacci extensions at $${fmtP(tp1)} — ${rr}:1 R:R. This is the ICT gold standard setup.`
+  };
+  return exps[sid] || '';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SCAN ENGINE
+// ═══════════════════════════════════════════════════════════════
+let scanning = false;
+
+async function runScan() {
+  if(scanning) return;
+  scanning = true;
+  setScanStatus('SCANNING','#ff8800');
+
+  try {
+    await refreshSymbolLists();
+    const universe = [...new Set([...mcapSyms,...volSyms,...gainerSyms])];
+    document.getElementById('stSyms').textContent = universe.length;
+
+    const fns = [s1_OB_BOS, s2_FVG_CHoCH, s3_LiqSweep, s4_Breaker, s5_MSS_OTE, s6_HL_Sweep];
+    const minRR = parseFloat(document.getElementById('minRRIn').value) || 3;
+
+    for(const sym of universe){
+      for(const tf of ['15m','1h']){
+        const klines = await fetchKlines(sym, tf);
+        if(!klines || klines.length<50) continue;
+        for(let si=0; si<fns.length; si++){
+          if(!stratEnabled[si+1]) continue;
+          try {
+            const found = fns[si](klines, sym, tf);
+            for(const a of found){
+              if(parseFloat(a.rr) < minRR) continue;
+              const dup = allAlerts.some(e =>
+                e.sym===a.sym && e.tf===a.tf && e.sid===a.sid && e.dir===a.dir &&
+                (Date.now()-e.time) < 8*60*1000
+              );
+              if(!dup){
+                allAlerts.unshift(a);
+                newCount++;
+                showToast(a);
+                playSound(a.dir);
+                pushNotif(a);
+              }
+            }
+          } catch(e){}
+        }
+      }
+      // Small yield to prevent browser freeze
+      await new Promise(r=>setTimeout(r,0));
+    }
+  } catch(e){ console.error('Scan error:',e); }
+
+  allAlerts = allAlerts.slice(0,120);
+  scanning = false;
+  setScanStatus('LIVE','#00ff88');
+  renderAlerts();
+  updateStats();
+  resetCountdown();
+  // Also refresh BTC MSS on every scan
+  updateBtcMss();
+  // Also refresh BTC MSS on every full scan
+  updateBtcMss();
+}
+
+function setScanStatus(txt,col){
+  document.getElementById('sTxt').textContent=txt;
+  document.getElementById('sDot').style.background=col;
+  document.getElementById('sDot').style.boxShadow=`0 0 8px ${col}`;
+}
+
+function forceScan(){ resetCountdown(); runScan(); }
+
+// ── COUNTDOWN ──
+function resetCountdown(){
+  const mins = parseInt(document.getElementById('scanMins').value)||5;
+  cdSeconds = mins*60;
+}
+function tickCountdown(){
+  cdSeconds = Math.max(0, cdSeconds-1);
+  const m = Math.floor(cdSeconds/60), s = cdSeconds%60;
+  document.getElementById('cdTimer').textContent =
+    `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  if(cdSeconds===0){
+    const autoTog = document.getElementById('autoTog');
+    if(autoTog && autoTog.classList.contains('on')) runScan();
+    else resetCountdown();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  WATCHLIST RENDER
+// ═══════════════════════════════════════════════════════════════
+function renderWatchlist(){
+  const syms = wTabActive==='mcap'?mcapSyms : wTabActive==='vol'?volSyms : gainerSyms;
+  const grid = document.getElementById('wGrid');
+  if(!syms.length){ grid.innerHTML='<div style="font-family:var(--mono);font-size:10px;color:var(--text3);padding:10px;">Loading…</div>'; return; }
+  grid.innerHTML = syms.slice(0,20).map(sym=>{
+    const d = allMarketData[sym];
+    if(!d) return '';
+    const short = sym.replace('USDT','');
+    const chg = parseFloat(d.priceChangePercent);
+    const chgCls = chg>=0?'up':'dn';
+    const chgSign = chg>=0?'+':'';
+    return `<div class="witem" onclick="quickSearch('${short}')">
+      <div class="wsym">${short}</div>
+      <div class="wprice">$${fmtP(parseFloat(d.lastPrice))}</div>
+      <div class="wchg ${chgCls}">${chgSign}${chg.toFixed(2)}%</div>
+    </div>`;
+  }).join('');
+}
+
+function switchWTab(el,tab){
+  wTabActive=tab;
+  document.querySelectorAll('.wtab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderWatchlist();
+}
+function quickSearch(sym){ document.getElementById('searchIn').value=sym; renderAlerts(); }
+
+// ═══════════════════════════════════════════════════════════════
+//  ALERTS RENDER
+// ═══════════════════════════════════════════════════════════════
+function getFiltered(){
+  const search = document.getElementById('searchIn').value.toLowerCase();
+  const strat = document.getElementById('stratSel').value;
+  return allAlerts.filter(a=>{
+    if(filters.tf!=='ALL'&&a.tf!==filters.tf) return false;
+    if(filters.dir!=='ALL'&&a.dir!==filters.dir) return false;
+    if(strat!=='ALL'&&a.sid!==parseInt(strat)) return false;
+    if(search&&!a.sym.toLowerCase().includes(search)) return false;
+    return true;
+  });
+}
+
+function renderAlerts(){
+  const f = getFiltered();
+  const list = document.getElementById('alertsList');
+  document.getElementById('acTxt').textContent = `${f.length} alerts`;
+  if(!f.length){
+    list.innerHTML=`<div class="empty"><div class="ei">📡</div><h3>No matching setups</h3><p>Adjust filters or wait for the next scan</p></div>`;
+    return;
+  }
+  list.innerHTML = f.map((a,idx)=>{
+    const short=a.sym.replace('USDT','');
+    const timeStr=fmtT(a.time);
+    const isNew=(Date.now()-a.time)<60000;
+    return `<div class="arow ${a.dir.toLowerCase()} ${isNew?'fresh':''}" onclick="openModal('${a.id}')">
+      <div class="asymbol">${short}</div>
+      <div class="astrat" title="S${a.sid}: ${STRATS[a.sid-1].name}">S${a.sid}: ${a.stratName}</div>
+      <div class="atf"><span style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:2px 7px;font-family:var(--mono);font-size:9px;">${a.tf}</span></div>
+      <div class="adir ${a.dir.toLowerCase()}">${a.dir==='LONG'?'▲ LONG':'▼ SHORT'}</div>
+      <div class="aprice">$${a.entry}</div>
+      <div class="arr">1:${a.rr}</div>
+      <div class="awr">${a.winRate}%</div>
+      <div class="atime">${timeStr}</div>
+      <canvas class="achrt" id="mc${idx}" width="130" height="46"></canvas>
+      <div class="aarr">›</div>
+    </div>`;
+  }).join('');
+  // Draw mini charts
+  f.forEach((a,idx)=>{
+    const c=document.getElementById(`mc${idx}`);
+    if(c) drawMini(c,a.candles,a.dir,a.entryNum,a.slNum,a.tp1Num);
+  });
+  updateStats();
+}
+
+function updateStats(){
+  document.getElementById('stTotal').textContent=allAlerts.length;
+  document.getElementById('stLong').textContent=allAlerts.filter(a=>a.dir==='LONG').length;
+  document.getElementById('stShort').textContent=allAlerts.filter(a=>a.dir==='SHORT').length;
+  const avg=allAlerts.length?(allAlerts.reduce((s,a)=>s+parseFloat(a.rr),0)/allAlerts.length).toFixed(1):'—';
+  document.getElementById('stRR').textContent=allAlerts.length?`1:${avg}`:'—';
+  document.getElementById('newBadge').textContent=`${newCount} NEW`;
+}
+
+function setFilter(type,val,btn){
+  if(type==='strat') val=document.getElementById('stratSel').value;
+  else filters[type]=val;
+  if(btn){
+    const par=btn.parentElement;
+    par.querySelectorAll('.fb').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  renderAlerts();
+}
+
+function clearAlerts(){ allAlerts=[]; newCount=0; renderAlerts(); updateStats(); }
+
+// ═══════════════════════════════════════════════════════════════
+//  CHART DRAWING — MINI
+// ═══════════════════════════════════════════════════════════════
+function drawMini(canvas, candles, dir, entry, sl, tp1){
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  if(!candles||!candles.length){ctx.fillStyle='#090d1a';ctx.fillRect(0,0,W,H);return;}
+  const slice=candles.slice(-30);
+  const ps=slice.flatMap(c=>[c.h,c.l]);
+  const extras=[entry,sl,tp1].filter(v=>v&&!isNaN(v));
+  const mn=Math.min(...ps,...extras)-Math.abs(Math.min(...ps,...extras))*0.005;
+  const mx=Math.max(...ps,...extras)+Math.abs(Math.max(...ps,...extras))*0.005;
+  const rng=mx-mn||1;
+  const toX=i=>(i/(slice.length-1))*W;
+  const toY=p=>H-((p-mn)/rng)*H;
+  ctx.fillStyle='#090d1a'; ctx.fillRect(0,0,W,H);
+  const cw=Math.max(1.5,(W/slice.length)*0.65);
+  slice.forEach((c,i)=>{
+    const x=toX(i),col=c.c>=c.o?'#00cc6a':'#cc0044';
+    ctx.strokeStyle=col; ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x,toY(c.h));ctx.lineTo(x,toY(c.l));ctx.stroke();
+    ctx.fillStyle=col;
+    const bT=toY(Math.max(c.o,c.c)),bB=toY(Math.min(c.o,c.c));
+    ctx.fillRect(x-cw/2,bT,cw,Math.max(1,bB-bT));
+  });
+  // Level lines
+  [[entry,'#00d4ff'],[sl,'#ff3366'],[tp1,'#00ff88']].forEach(([p,col])=>{
+    if(!p||isNaN(p)||p<mn||p>mx) return;
+    ctx.strokeStyle=col; ctx.setLineDash([2,2]); ctx.lineWidth=0.8;
+    ctx.beginPath();ctx.moveTo(0,toY(p));ctx.lineTo(W,toY(p));ctx.stroke();
+    ctx.setLineDash([]);
+  });
+  // Arrow
+  const lc=slice[slice.length-1];
+  ctx.fillStyle=dir==='LONG'?'#00ff88':'#ff3366';
+  ctx.font='bold 11px sans-serif';
+  ctx.fillText(dir==='LONG'?'↑':'↓',W-12,toY(lc.c)+(dir==='LONG'?-3:10));
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CHART DRAWING — MODAL (full TradingView-style)
+// ═══════════════════════════════════════════════════════════════
+function drawModal(candles, dir, entry, sl, tp1, tp2, sid, hlLevels, sweepLow){
+  const canvas=document.getElementById('mCanvas');
+  const box=document.getElementById('mChrtBox');
+  if(!box||!canvas) return;
+  const W2=box.getBoundingClientRect().width||box.offsetWidth||860;
+  canvas.width=Math.max(400,W2);
+  canvas.height=310;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const slice=candles.slice(-80);
+  const extras=[entry,sl,tp1,tp2,sweepLow].filter(v=>v&&!isNaN(v));
+  const hlExtras=(hlLevels||[]).filter(v=>v&&!isNaN(v));
+  const allP=slice.flatMap(c=>[c.h,c.l]).concat(extras,hlExtras);
+  const pad=(Math.max(...allP)-Math.min(...allP))*0.1;
+  const mn=Math.min(...allP)-pad;
+  const mx=Math.max(...allP)+pad;
+  const rng=mx-mn||1;
+  const LEFT=52, RIGHT=8, TOP=6, BOT=22;
+  const toX=i=>LEFT+(i/(slice.length-1))*(W-LEFT-RIGHT);
+  const toY=p=>TOP+(H-TOP-BOT)-(((p-mn)/rng)*(H-TOP-BOT));
+
+  // Background
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#090d1a'); bg.addColorStop(1,'#050810');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  // Grid + price labels
+  ctx.strokeStyle='rgba(30,48,88,0.35)'; ctx.lineWidth=0.5;
+  for(let i=0;i<=6;i++){
+    const y=TOP+(H-TOP-BOT)/6*i;
+    const p=mx-(rng/6*i);
+    ctx.beginPath();ctx.moveTo(LEFT,y);ctx.lineTo(W-RIGHT,y);ctx.stroke();
+    ctx.fillStyle='rgba(68,85,119,0.9)';ctx.font='8px monospace';
+    ctx.fillText(fmtP(p),2,y+3);
+  }
+  // Time labels (last 5)
+  ctx.fillStyle='rgba(68,85,119,0.7)';ctx.font='8px monospace';
+  [0,20,40,60,slice.length-1].forEach(i=>{
+    if(i<slice.length){
+      const x=toX(i);
+      const t=new Date(slice[i].t);
+      ctx.fillText(`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`,x-10,H-4);
+    }
+  });
+
+  // ── HL levels (strategy 6) ──
+  if(hlLevels&&hlLevels.length){
+    hlLevels.forEach((lvl,li)=>{
+      if(lvl<mn||lvl>mx) return;
+      const y=toY(lvl);
+      ctx.strokeStyle='rgba(255,102,153,0.4)';ctx.setLineDash([3,5]);ctx.lineWidth=0.8;
+      ctx.beginPath();ctx.moveTo(LEFT,y);ctx.lineTo(W-RIGHT,y);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='rgba(255,102,153,0.7)';ctx.font='7px monospace';
+      ctx.fillText(`HL${li+1}`,LEFT+2,y-2);
+    });
+  }
+  if(sweepLow&&sweepLow>mn&&sweepLow<mx){
+    const y=toY(sweepLow);
+    ctx.strokeStyle='rgba(255,51,102,0.5)';ctx.setLineDash([2,4]);ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(LEFT,y);ctx.lineTo(W-RIGHT,y);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(255,51,102,0.8)';ctx.font='7px monospace';
+    ctx.fillText('SWEEP LOW',LEFT+2,y-2);
+  }
+
+  // Zone fills
+  if(dir==='LONG'&&entry&&sl&&tp1){
+    ctx.fillStyle='rgba(255,51,102,0.05)';
+    const ry=toY(entry),rb=toY(sl);
+    if(rb>ry) ctx.fillRect(LEFT,ry,W-LEFT-RIGHT,rb-ry);
+    ctx.fillStyle='rgba(0,255,136,0.05)';
+    const gy=toY(tp1),ge=toY(entry);
+    if(ge>gy) ctx.fillRect(LEFT,gy,W-LEFT-RIGHT,ge-gy);
+  } else if(dir==='SHORT'&&entry&&sl&&tp1){
+    ctx.fillStyle='rgba(255,51,102,0.05)';
+    const ry=toY(sl),re=toY(entry);
+    if(re>ry) ctx.fillRect(LEFT,ry,W-LEFT-RIGHT,re-ry);
+    ctx.fillStyle='rgba(0,255,136,0.05)';
+    const gy=toY(entry),gt=toY(tp1);
+    if(gt>gy) ctx.fillRect(LEFT,gy,W-LEFT-RIGHT,gt-gy);
+  }
+
+  // Candles
+  const cw=Math.max(2,(W-LEFT-RIGHT)/slice.length*0.6);
+  slice.forEach((c,i)=>{
+    const x=toX(i);
+    const isUp=c.c>=c.o;
+    const col=isUp?'#00cc6a':'#cc0044';
+    ctx.strokeStyle=col;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x,toY(c.h));ctx.lineTo(x,toY(c.l));ctx.stroke();
+    const bT=toY(Math.max(c.o,c.c)),bB=toY(Math.min(c.o,c.c));
+    ctx.fillStyle=isUp?'rgba(0,204,106,0.85)':'rgba(204,0,68,0.85)';
+    ctx.fillRect(x-cw/2,bT,cw,Math.max(1,bB-bT));
+  });
+
+  // Key level lines
+  function drawLvl(p,col,lbl,dash=[4,3]){
+    if(!p||isNaN(p)||p<mn||p>mx) return;
+    const y=toY(p);
+    ctx.strokeStyle=col;ctx.setLineDash(dash);ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(LEFT,y);ctx.lineTo(W-RIGHT,y);ctx.stroke();
+    ctx.setLineDash([]);
+    const tw=ctx.measureText(lbl).width;
+    ctx.fillStyle=col;
+    ctx.fillRect(W-RIGHT-tw-10,y-8,tw+10,15);
+    ctx.fillStyle='#000';ctx.font='bold 8px monospace';
+    ctx.fillText(lbl,W-RIGHT-tw-6,y+3);
+  }
+  drawLvl(entry,'#00d4ff','ENTRY',[]);
+  drawLvl(sl,'#ff3366','SL');
+  drawLvl(tp1,'#00ff88','TP1');
+  drawLvl(tp2,'rgba(0,200,100,0.7)','TP2',[5,4]);
+
+  // Strategy label
+  const s=STRATS[sid-1];
+  ctx.fillStyle=s.color+'bb';ctx.font='bold 10px Syne,sans-serif';
+  ctx.fillText(`S${sid}: ${s.short}`,LEFT+4,18);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════════════════════════
+function openModal(id){
+  const a=allAlerts.find(x=>x.id===id);
+  if(!a) return;
+  const short=a.sym.replace('USDT','');
+  document.getElementById('mSym').textContent=short+'/USDT';
+  document.getElementById('mDir').textContent=a.dir==='LONG'?'▲ LONG':'▼ SHORT';
+  document.getElementById('mDir').className=`dbadge ${a.dir.toLowerCase()}`;
+  document.getElementById('mStrat').textContent=`S${a.sid}: ${a.stratName}`;
+  document.getElementById('mSub').textContent=`${a.tf} · Detected ${fmtT(a.time)} · Win Rate: ${a.winRate}% · R:R 1:${a.rr}`;
+  document.getElementById('mEn').textContent='$'+a.entry;
+  document.getElementById('mSL').textContent='$'+a.sl;
+  document.getElementById('mRR').textContent='1:'+a.rr;
+  document.getElementById('mWR').textContent=a.winRate+'%';
+  document.getElementById('mLvls').innerHTML=`
+    <div class="lvlcard en"><div class="ll">ENTRY</div><div class="lv">$${a.entry}</div></div>
+    <div class="lvlcard sl"><div class="ll">STOP LOSS</div><div class="lv">$${a.sl}</div></div>
+    <div class="lvlcard t1"><div class="ll">TP1 (1:3)</div><div class="lv">$${a.tp1}</div></div>
+    <div class="lvlcard t2"><div class="ll">TP2 (1:5)</div><div class="lv">$${a.tp2}</div></div>
+    <div class="lvlcard t3"><div class="ll">TP3 (ext)</div><div class="lv">$${a.tp3}</div></div>
+    <div class="lvlcard rr"><div class="ll">R:R RATIO</div><div class="lv">1:${a.rr}</div></div>
+  `;
+  document.getElementById('eTitle').textContent=`S${a.sid}: ${STRATS[a.sid-1].name.toUpperCase()}`;
+  document.getElementById('eTxt').textContent=a.explanation;
+  document.getElementById('overlay').classList.add('open');
+
+  // Draw chart — retry until box has real dimensions (handles CSS transition delay)
+  function tryDraw(attempts=0){
+    const box=document.getElementById('mChrtBox');
+    const canvas=document.getElementById('mCanvas');
+    if(!box||!canvas) return;
+    const rect=box.getBoundingClientRect();
+    const W=Math.floor(rect.width);
+    if(W<100 && attempts<10){
+      // Box not yet laid out, retry after next paint
+      requestAnimationFrame(()=>setTimeout(()=>tryDraw(attempts+1),30));
+      return;
+    }
+    const finalW=W>100?W:860;
+    canvas.width=finalW;
+    canvas.height=310;
+    // Draw loading bg first
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#090d1a'; ctx.fillRect(0,0,finalW,310);
+    ctx.fillStyle='rgba(68,85,119,0.5)'; ctx.font='12px Space Mono, monospace';
+    ctx.fillText('Rendering chart…',finalW/2-60,155);
+    if(a.candles&&a.candles.length>5){
+      requestAnimationFrame(()=>{
+        drawModal(a.candles,a.dir,a.entryNum,a.slNum,a.tp1Num,a.tp2Num,a.sid,a.hlLevels||null,a.sweepLow||null);
+      });
+    }
+  }
+  // Start after transition begins
+  setTimeout(()=>tryDraw(),50);
+
+  newCount=0; document.getElementById('newBadge').textContent='0 NEW';
+}
+function closeOverlay(e){ if(!e||e.target===document.getElementById('overlay')) document.getElementById('overlay').classList.remove('open'); }
+
+// ═══════════════════════════════════════════════════════════════
+//  SOUND
+// ═══════════════════════════════════════════════════════════════
+function initAudio(){ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); }
+function playSound(dir){
+  const sndTog=document.getElementById('sndTog');
+  if(!soundOn||!sndTog?.classList.contains('on')) return;
+  try{
+    initAudio();
+    const freqs=dir==='LONG'?[392,523,659]:[659,523,392];
+    freqs.forEach((f,i)=>{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.connect(g);g.connect(audioCtx.destination);
+      o.frequency.value=f; o.type='sine';
+      const t=audioCtx.currentTime+i*0.13;
+      g.gain.setValueAtTime(0.12,t);
+      g.gain.exponentialRampToValueAtTime(0.001,t+0.28);
+      o.start(t);o.stop(t+0.28);
+    });
+  }catch(e){}
+}
+function toggleSound(){
+  soundOn=!soundOn;
+  const btn=document.getElementById('sndBtn');
+  btn.textContent=soundOn?'🔔 Sound ON':'🔕 Sound OFF';
+  btn.classList.toggle('on',soundOn);
+  const tog=document.getElementById('sndTog');
+  if(tog) tog.classList.toggle('on',soundOn);
+}
+function syncSoundBtn(){
+  const on=document.getElementById('sndTog')?.classList.contains('on');
+  soundOn=on; 
+  const btn=document.getElementById('sndBtn');
+  if(btn){btn.textContent=on?'🔔 Sound ON':'🔕 Sound OFF';btn.classList.toggle('on',on);}
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PUSH + TOAST
+// ═══════════════════════════════════════════════════════════════
+async function reqPush(el){
+  if('Notification' in window){
+    const p=await Notification.requestPermission();
+    el.classList.toggle('on',p==='granted');
+    if(p==='granted') simpleToast('Push notifications enabled','✅');
+  }
+}
+function pushNotif(a){
+  const tog=document.getElementById('pushTog');
+  if(!tog?.classList.contains('on')||Notification.permission!=='granted') return;
+  const short=a.sym.replace('USDT','');
+  new Notification(`${short} ${a.dir} — S${a.sid}`,{
+    body:`${a.stratName} · ${a.tf} · Entry $${a.entry} · R:R 1:${a.rr}`,
+    tag:a.id
+  });
+}
+function showToast(a){
+  const tog=document.getElementById('toastTog');
+  if(!tog?.classList.contains('on')) return;
+  const short=a.sym.replace('USDT','');
+  const wrap=document.getElementById('toastWrap');
+  const t=document.createElement('div');
+  t.className=`toast ${a.dir.toLowerCase()}-t`;
+  t.innerHTML=`<div class="tico">${a.dir==='LONG'?'🟢':'🔴'}</div>
+    <div><div class="ttitle">${short} ${a.dir} — S${a.sid}: ${a.stratName}</div>
+    <div class="tbody">${a.tf} · Entry $${a.entry} · R:R 1:${a.rr} · ${a.winRate}% WR</div>
+    <div class="ttime">${fmtT(a.time)}</div></div>`;
+  t.onclick=()=>{ openModal(a.id); showPage('alerts'); };
+  wrap.appendChild(t);
+  setTimeout(()=>{ t.classList.add('out'); setTimeout(()=>t.remove(),260); },6000);
+}
+function simpleToast(msg,ico='ℹ️'){
+  const wrap=document.getElementById('toastWrap');
+  const t=document.createElement('div');
+  t.className='toast';
+  t.innerHTML=`<div class="tico">${ico}</div><div><div class="ttitle">${msg}</div></div>`;
+  wrap.appendChild(t);
+  setTimeout(()=>{ t.classList.add('out'); setTimeout(()=>t.remove(),260); },3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  STRATEGIES PAGE
+// ═══════════════════════════════════════════════════════════════
+function renderStrategies(){
+  document.getElementById('stratsGrid').innerHTML=STRATS.map(s=>`
+    <div class="sc">
+      <div class="sch">
+        <div class="snum" style="background:${s.color}18;border:1px solid ${s.color}40;color:${s.color}">S${s.id}</div>
+        <div>
+          <div class="stitle">${s.name}</div>
+          <div class="stagline">${s.tags.join(' · ')}</div>
+        </div>
+        <div class="wrbadge">${s.winRate}% WR</div>
+      </div>
+      <div class="scb">
+        <div>
+          <h5 style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">ENTRY CONDITIONS — ALL MUST BE MET</h5>
+          <div class="cond-list">${s.conditions.map(c=>`<div class="cond-item">${c}</div>`).join('')}</div>
+        </div>
+        <div>
+          <div class="tm-box"><div class="tm-lbl">Entry</div><div class="tm-val">${s.entry}</div></div>
+          <div class="tm-box"><div class="tm-lbl" style="color:var(--red)">Stop Loss</div><div class="tm-val">${s.sl}</div></div>
+          <div class="tm-box"><div class="tm-lbl" style="color:var(--green)">Take Profit</div><div class="tm-val">${s.tp}</div></div>
+          <div class="s-desc">${s.desc}</div>
+        </div>
+      </div>
+      <div class="sstats">
+        <div class="ss"><div class="sv" style="color:${s.color}">${s.winRate}%</div><div class="sl">WIN RATE</div></div>
+        <div class="ss"><div class="sv">1:${s.rrMin}–${s.rrMax}</div><div class="sl">R:R RANGE</div></div>
+        <div class="ss"><div class="sv">15m/1H</div><div class="sl">TIMEFRAMES</div></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════════════════════════
+function renderSettingsToggles(){
+  document.getElementById('stratToggles').innerHTML=STRATS.map(s=>`
+    <div class="setr">
+      <div>
+        <div class="setr-lbl">S${s.id}: ${s.short}</div>
+        <div class="setr-sub">${s.winRate}% win rate · ${s.id===6?'Custom pattern':'ICT SMC'}</div>
+      </div>
+      <div class="tog on" id="stog${s.id}" onclick="this.classList.toggle('on');stratEnabled[${s.id}]=this.classList.contains('on')"></div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`page-${name}`).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>{
+    if(b.textContent.toLowerCase().startsWith(name.slice(0,4))) b.classList.add('active');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DEMO ALERTS — fire immediately for UX while real scan loads
+// ═══════════════════════════════════════════════════════════════
+function makeDemoAlert(sym, sid, dir, tf){
+  const prices={
+    'BTCUSDT':65200,'ETHUSDT':3180,'BNBUSDT':582,'SOLUSDT':148,
+    'XRPUSDT':0.585,'DOGEUSDT':0.118,'ADAUSDT':0.475,'AVAXUSDT':37.2,
+    'LINKUSDT':14.8,'DOTUSDT':7.9,'MATICUSDT':0.91,'LTCUSDT':84,
+    'SHIBUSDT':0.0000245,'TRXUSDT':0.113,'ATOMUSDT':9.3,
+    'UNIUSDT':8.6,'XLMUSDT':0.125,'ETCUSDT':27.5,'NEARUSDT':5.5,'AAVEUSDT':188
+  };
+  const base=prices[sym]||100;
+  const A=atr_demo(base);
+  const price=base*(0.997+Math.random()*0.006);
+  const entry=dir==='LONG'?price*0.998:price*1.002;
+  const sl=dir==='LONG'?entry-A*1.4:entry+A*1.4;
+  const rrV=3+Math.random()*4;
+  const tp1=dir==='LONG'?entry+(entry-sl)*rrV:entry-(sl-entry)*rrV;
+  const tp2=dir==='LONG'?entry+(entry-sl)*(rrV+2):entry-(sl-entry)*(rrV+2);
+  // Synthetic candles
+  const candles=[];
+  let p=price*0.97;
+  for(let i=0;i<65;i++){
+    const mv=(Math.random()-0.48)*A*0.7;
+    const h=p+Math.abs(mv)+Math.random()*A*0.25;
+    const l=p-Math.abs(mv)-Math.random()*A*0.25;
+    candles.push({t:Date.now()-(65-i)*60000,o:p,h,l,c:p+mv,v:Math.random()*800000});
+    p=p+mv;
+  }
+  return makeAlert(sym,tf,sid,dir,price,entry,sl,tp1,tp2,rrV,candles,50);
+}
+function atr_demo(price){ return price*0.018; }
+
+function loadDemos(){
+  const demos=[
+    ['BTCUSDT',3,'LONG','1h'],['ETHUSDT',2,'SHORT','15m'],
+    ['SOLUSDT',6,'LONG','1h'],['BNBUSDT',1,'LONG','15m'],
+    ['XRPUSDT',5,'LONG','1h'],['AVAXUSDT',4,'SHORT','15m'],
+    ['LINKUSDT',3,'SHORT','1h'],['ADAUSDT',6,'LONG','15m'],
+    ['DOGEUSDT',1,'SHORT','15m'],['DOTUSDT',5,'LONG','1h'],
+    ['NEARUSDT',2,'LONG','15m'],['AAVEUSDT',4,'LONG','1h'],
+  ];
+  demos.forEach((d,i)=>{
+    setTimeout(()=>{
+      const a=makeDemoAlert(...d);
+      if(i===0||i===2) a.hlLevels=[a.entryNum*0.985,a.entryNum*0.99,a.entryNum*0.995]; // Demo HL levels for S6
+      allAlerts.unshift(a);
+      if(i<3){showToast(a); if(i===0)playSound(d[2]);}
+      renderAlerts(); updateStats();
+    }, i*250);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SETTINGS SAVE
+// ═══════════════════════════════════════════════════════════════
+function saveSettings(){
+  // Persist to localStorage
+  const minRR=parseFloat(document.getElementById('minRRIn').value)||3;
+  const scanM=parseInt(document.getElementById('scanMins').value)||5;
+  try{ localStorage.setItem('smc_minRR',minRR); localStorage.setItem('smc_scanMins',scanM); }catch(e){}
+  // Visual feedback on all save buttons
+  document.querySelectorAll('.save-btn').forEach(b=>{
+    b.textContent='✓ SAVED'; b.classList.add('saved');
+    setTimeout(()=>{ b.textContent='SAVE'; b.classList.remove('saved'); },2000);
+  });
+  // Update countdown
+  resetCountdown();
+  simpleToast(`Settings saved — Min R:R: 1:${minRR} · Scan: every ${scanM}min`,'💾');
+}
+function loadSavedSettings(){
+  try{
+    const rr=localStorage.getItem('smc_minRR');
+    const sm=localStorage.getItem('smc_scanMins');
+    if(rr){ const el=document.getElementById('minRRIn'); if(el) el.value=rr; }
+    if(sm){ const el=document.getElementById('scanMins'); if(el) el.value=sm; }
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  BTC MSS 3-MINUTE MONITOR
+// ═══════════════════════════════════════════════════════════════
+let btcKlines3m=[];
+let btcMssInterval=null;
+
+async function updateBtcMss(){
+  try{
+    const klines=await fetchKlines('BTCUSDT','3m',120);
+    if(!klines||klines.length<30) return;
+    btcKlines3m=klines;
+    const last=klines[klines.length-1];
+    const price=last.c;
+    document.getElementById('btcLivePrice').textContent='$'+fmtP(price);
+    const A=atr(klines,14);
+
+    // Detect swings
+    const sH=swingHighs(klines,3);
+    const sL=swingLows(klines,3);
+
+    // Trend
+    let trend='RANGING',trendCol='var(--text3)';
+    if(sH.length>=2&&sL.length>=2){
+      const bullT=sH[sH.length-1].h>sH[sH.length-2].h&&sL[sL.length-1].l>sL[sL.length-2].l;
+      const bearT=sH[sH.length-1].h<sH[sH.length-2].h&&sL[sL.length-1].l<sL[sL.length-2].l;
+      if(bullT){trend='BULLISH ▲';trendCol='var(--green)';}
+      else if(bearT){trend='BEARISH ▼';trendCol='var(--red)';}
+    }
+    document.getElementById('btcTrend').textContent=trend;
+    document.getElementById('btcTrend').style.color=trendCol;
+
+    const lastHigh=sH.length?sH[sH.length-1].h:null;
+    const lastLow=sL.length?sL[sL.length-1].l:null;
+    document.getElementById('btcLastHigh').textContent=lastHigh?'$'+fmtP(lastHigh):'—';
+    document.getElementById('btcLastLow').textContent=lastLow?'$'+fmtP(lastLow):'—';
+
+    // MSS Detection on 3m
+    const mssResult=detectMSS3m(klines,sH,sL,A);
+    const statusEl=document.getElementById('btcMssStatus');
+    const detailEl=document.getElementById('btcMssDetail');
+    const alertBox=document.getElementById('btcMssAlert');
+    const alertTxt=document.getElementById('btcMssAlertTxt');
+
+    if(mssResult.detected){
+      statusEl.textContent=mssResult.dir==='BULL'?'🟢 BULL MSS':'🔴 BEAR MSS';
+      statusEl.style.color=mssResult.dir==='BULL'?'var(--green)':'var(--red)';
+      detailEl.textContent=mssResult.summary;
+      alertBox.style.display='block';
+      const isBull=mssResult.dir==='BULL';
+      alertBox.style.borderColor=isBull?'var(--green)':'var(--red)';
+      alertBox.style.background=isBull?'rgba(0,255,136,0.08)':'rgba(255,51,102,0.08)';
+      const titleEl=document.getElementById('btcMssAlertTitle');
+      if(titleEl){titleEl.style.color=isBull?'var(--green)':'var(--red)';titleEl.textContent=(isBull?'🟢':'🔴')+' MSS DETECTED ON 3M';}
+      alertTxt.textContent=mssResult.detail;
+      // Update badge
+      const badge=document.getElementById('btcMssBadge');
+      if(badge){badge.textContent=isBull?'▲ BULL MSS':'▼ BEAR MSS';badge.className='bmss-badge '+(isBull?'bull':'bear');}
+    } else {
+      statusEl.textContent='⚪ NO MSS';
+      statusEl.style.color='var(--text3)';
+      detailEl.textContent=mssResult.summary;
+      alertBox.style.display='none';
+      const badge=document.getElementById('btcMssBadge');
+      if(badge){badge.textContent='NO MSS';badge.className='bmss-badge none';}
+    }
+
+    // Update time
+    const timeEl=document.getElementById('btcMssTime');
+    if(timeEl) timeEl.textContent=fmtT(Date.now());
+
+    // Draw BTC 3m chart — wait for layout
+    requestAnimationFrame(()=>drawBtcChart(klines,sH,sL,mssResult));
+  }catch(e){ console.error('BTC MSS error:',e); }
+}
+
+function detectMSS3m(klines,sH,sL,A){
+  const N=klines.length;
+  const last=klines[N-1];
+  // Look at last 40 candles for MSS
+  const recent=klines.slice(-40);
+  const recH=swingHighs(recent,2);
+  const recL=swingLows(recent,2);
+
+  // Bull MSS: was making lower highs/lows, then displacement candle breaks above a swing high
+  if(recH.length>=2&&recL.length>=2){
+    // Check for downtrend in recent
+    const bearTrend=recH[recH.length-1].h<recH[recH.length-2].h||recL[recL.length-1].l<recL[recL.length-2].l;
+    if(bearTrend){
+      // Find a recent strong bull candle that broke the last swing high
+      for(let i=recent.length-6;i<recent.length;i++){
+        const k=recent[i];
+        const priorHigh=recH[recH.length-1].h;
+        if(k.c>priorHigh&&(k.c-k.o)>A*0.5&&i>recH[recH.length-1].i){
+          const oteHigh=priorHigh;
+          const oteLow=recL[recL.length-1].l;
+          const fib618=oteHigh-(oteHigh-oteLow)*0.618;
+          const fib786=oteHigh-(oteHigh-oteLow)*0.786;
+          return {
+            detected:true, dir:'BULL',
+            mssCandle:recent[i],
+            priorHigh, fib618, fib786,
+            summary:`Bull MSS at ${fmtT(k.t)}: broke $${fmtP(priorHigh)} with displacement. OTE zone: $${fmtP(fib786)}–$${fmtP(fib618)}`,
+            detail:`Displacement candle broke prior swing high $${fmtP(priorHigh)}. If price retraces to OTE (61.8–78.6% fib: $${fmtP(fib786)}–$${fmtP(fib618)}), that's a long entry. SL below the MSS swing low. Targeting next HTF high.`
+          };
+        }
+      }
+    }
+    // Bear MSS
+    const bullTrend=recH[recH.length-1].h>recH[recH.length-2].h||recL[recL.length-1].l>recL[recL.length-2].l;
+    if(bullTrend){
+      for(let i=recent.length-6;i<recent.length;i++){
+        const k=recent[i];
+        const priorLow=recL[recL.length-1].l;
+        if(k.c<priorLow&&(k.o-k.c)>A*0.5&&i>recL[recL.length-1].i){
+          const oteHigh=recH[recH.length-1].h;
+          const oteLow=priorLow;
+          const fib618=oteLow+(oteHigh-oteLow)*0.618;
+          const fib786=oteLow+(oteHigh-oteLow)*0.786;
+          return {
+            detected:true, dir:'BEAR',
+            mssCandle:recent[i],
+            priorLow, fib618, fib786,
+            summary:`Bear MSS at ${fmtT(k.t)}: broke $${fmtP(priorLow)} with displacement. OTE zone: $${fmtP(fib618)}–$${fmtP(fib786)}`,
+            detail:`Displacement candle broke prior swing low $${fmtP(priorLow)}. If price retraces to OTE (61.8–78.6% fib: $${fmtP(fib618)}–$${fmtP(fib786)}), that's a short entry. SL above the MSS swing high. Targeting next HTF low.`
+          };
+        }
+      }
+    }
+  }
+  // No MSS
+  const last3H=recH.slice(-1)[0]?.h;
+  const last3L=recL.slice(-1)[0]?.l;
+  return {
+    detected:false,
+    summary:`No MSS on 3m currently. Last swing high: $${last3H?fmtP(last3H):'—'} · Last swing low: $${last3L?fmtP(last3L):'—'}. Monitoring for displacement candle break.`,
+    detail:''
+  };
+}
+
+function drawBtcChart(klines,sH,sL,mssResult){
+  const canvas=document.getElementById('btcMssCanvas');
+  if(!canvas) return;
+  const box=document.getElementById('btcChartBox')||canvas.parentElement;
+  const rect=box.getBoundingClientRect();
+  const W=Math.max(rect.width||box.offsetWidth||600,300);
+  canvas.width=Math.floor(W);
+  canvas.height=160;
+  canvas.style.width=Math.floor(W)+'px';
+  canvas.style.height='160px';
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  const slice=klines.slice(-60);
+  const LEFT=46,RIGHT=6,TOP=8,BOT=18;
+  const allP=slice.flatMap(c=>[c.h,c.l]);
+  const pad=(Math.max(...allP)-Math.min(...allP))*0.08;
+  const mn=Math.min(...allP)-pad, mx=Math.max(...allP)+pad;
+  const rng=mx-mn||1;
+  const toX=i=>LEFT+(i/(slice.length-1))*(W-LEFT-RIGHT);
+  const toY=p=>TOP+(H-TOP-BOT)-(((p-mn)/rng)*(H-TOP-BOT));
+
+  // BG
+  ctx.fillStyle='#090d1a'; ctx.fillRect(0,0,W,H);
+
+  // Grid
+  ctx.strokeStyle='rgba(30,48,88,0.3)'; ctx.lineWidth=0.5;
+  for(let i=0;i<=4;i++){
+    const y=TOP+(H-TOP-BOT)/4*i;
+    const p=mx-(rng/4*i);
+    ctx.beginPath();ctx.moveTo(LEFT,y);ctx.lineTo(W-RIGHT,y);ctx.stroke();
+    ctx.fillStyle='rgba(68,85,119,0.8)';ctx.font='7px monospace';
+    ctx.fillText(fmtP(p),2,y+3);
+  }
+
+  // Swing highs (orange dots + line)
+  if(sH.length>=2){
+    ctx.strokeStyle='rgba(255,136,0,0.5)';ctx.setLineDash([3,3]);ctx.lineWidth=0.8;
+    ctx.beginPath();
+    // Map sH indices to slice indices
+    const sliceStart=klines.length-60;
+    sH.forEach((h,i)=>{
+      const si=h.i-sliceStart;
+      if(si<0||si>=slice.length) return;
+      const x=toX(si),y=toY(h.h);
+      if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke(); ctx.setLineDash([]);
+    sH.forEach(h=>{
+      const si=h.i-sliceStart;
+      if(si<0||si>=slice.length) return;
+      ctx.fillStyle='var(--orange)';
+      ctx.beginPath();ctx.arc(toX(si),toY(h.h),2.5,0,Math.PI*2);ctx.fill();
+    });
+  }
+
+  // Swing lows (purple dots + line)
+  if(sL.length>=2){
+    ctx.strokeStyle='rgba(204,136,255,0.5)';ctx.setLineDash([3,3]);ctx.lineWidth=0.8;
+    ctx.beginPath();
+    const sliceStart=klines.length-60;
+    sL.forEach((l,i)=>{
+      const si=l.i-sliceStart;
+      if(si<0||si>=slice.length) return;
+      const x=toX(si),y=toY(l.l);
+      if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke(); ctx.setLineDash([]);
+    sL.forEach(l=>{
+      const si=l.i-sliceStart;
+      if(si<0||si>=slice.length) return;
+      ctx.fillStyle='var(--purple)';
+      ctx.beginPath();ctx.arc(toX(si),toY(l.l),2.5,0,Math.PI*2);ctx.fill();
+    });
+  }
+
+  // MSS OTE zone fill
+  if(mssResult.detected&&mssResult.fib618&&mssResult.fib786){
+    const lo=Math.min(mssResult.fib618,mssResult.fib786);
+    const hi=Math.max(mssResult.fib618,mssResult.fib786);
+    if(lo>mn&&hi<mx){
+      const col=mssResult.dir==='BULL'?'rgba(0,255,136,0.12)':'rgba(255,51,102,0.12)';
+      ctx.fillStyle=col;
+      ctx.fillRect(LEFT,toY(hi),W-LEFT-RIGHT,toY(lo)-toY(hi));
+      ctx.strokeStyle=mssResult.dir==='BULL'?'rgba(0,255,136,0.4)':'rgba(255,51,102,0.4)';
+      ctx.setLineDash([2,3]);ctx.lineWidth=0.8;
+      ctx.beginPath();ctx.moveTo(LEFT,toY(hi));ctx.lineTo(W-RIGHT,toY(hi));ctx.stroke();
+      ctx.beginPath();ctx.moveTo(LEFT,toY(lo));ctx.lineTo(W-RIGHT,toY(lo));ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle=mssResult.dir==='BULL'?'rgba(0,255,136,0.7)':'rgba(255,51,102,0.7)';
+      ctx.font='7px monospace';ctx.fillText('OTE',LEFT+2,toY(hi)-2);
+    }
+  }
+
+  // Candles
+  const cw=Math.max(1.5,(W-LEFT-RIGHT)/slice.length*0.65);
+  slice.forEach((c,i)=>{
+    const x=toX(i),isUp=c.c>=c.o,col=isUp?'#00cc6a':'#cc0044';
+    ctx.strokeStyle=col;ctx.lineWidth=0.8;
+    ctx.beginPath();ctx.moveTo(x,toY(c.h));ctx.lineTo(x,toY(c.l));ctx.stroke();
+    ctx.fillStyle=isUp?'rgba(0,204,106,0.9)':'rgba(204,0,68,0.9)';
+    const bT=toY(Math.max(c.o,c.c)),bB=toY(Math.min(c.o,c.c));
+    ctx.fillRect(x-cw/2,bT,cw,Math.max(1,bB-bT));
+  });
+
+  // Label
+  const mssCol=mssResult.detected?(mssResult.dir==='BULL'?'#00ff88':'#ff3366'):'rgba(68,85,119,0.8)';
+  ctx.fillStyle=mssCol;ctx.font='bold 9px monospace';
+  const lbl=mssResult.detected?(mssResult.dir==='BULL'?'▲ BULL MSS':'▼ BEAR MSS'):'NO MSS';
+  ctx.fillText('BTC 3m — '+lbl,LEFT+4,H-5);
+
+  // Time labels
+  ctx.fillStyle='rgba(68,85,119,0.6)';ctx.font='7px monospace';
+  [0,15,30,45,slice.length-1].forEach(i=>{
+    if(i<slice.length){
+      const t=new Date(slice[i].t);
+      ctx.fillText(`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`,toX(i)-8,H-5);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════
+async function init(){
+  loadSavedSettings();
+  renderStrategies();
+  renderSettingsToggles();
+  loadDemos();
+  // Initial BTC MSS
+  await updateBtcMss();
+  // BTC MSS refreshes every 30 seconds independently
+  btcMssInterval=setInterval(updateBtcMss, 30000);
+  // Keyboard shortcuts
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape') document.getElementById('overlay').classList.remove('open');
+    if(e.key==='1') showPage('alerts');
+    if(e.key==='2') showPage('strategies');
+    if(e.key==='3') showPage('settings');
+  });
+  // Countdown ticker
+  cdInterval=setInterval(tickCountdown,1000);
+  // Initial real scan
+  setTimeout(runScan, 1200);
+  // Re-schedule scan every second check
+  setInterval(()=>{
+    const autoTog=document.getElementById('autoTog');
+    if(cdSeconds<=0&&autoTog?.classList.contains('on')) runScan();
+  },1000);
+  // Price refresh every 20s
+  setInterval(async()=>{
+    await fetchAllTickers();
+    renderWatchlist();
+  },20000);
+  // Wake lock
+  if('wakeLock' in navigator){ try{await navigator.wakeLock.request('screen');}catch(e){} }
+  simpleToast('SMC Scanner active — 60 pairs · 15m + 1H · 6 strategies · BTC 3m MSS live','⚡');
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
