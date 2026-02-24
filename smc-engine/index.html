@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMC Prop Engine | Institutional Trading System</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%231e7fff'/><text y='72' x='12' font-size='72' font-family='monospace' fill='white' font-weight='bold'>S</text></svg>">
+</head>
+<body>
+
+<!-- ─────────── HEADER ─────────────────────────────────────────── -->
+<header id="app-header">
+  <div class="header-brand">
+    <div class="brand-logo">S</div>
+    <div>
+      <div class="brand-name">SMC PROP ENGINE</div>
+      <div class="brand-tag">INSTITUTIONAL GRADE · v1.0</div>
+    </div>
+  </div>
+
+  <nav class="nav-tabs">
+    <button class="nav-tab active" data-view="live">⚡ Live</button>
+    <button class="nav-tab" data-view="backtest">📊 Backtest</button>
+    <button class="nav-tab" data-view="analytics">📈 Analytics</button>
+    <button class="nav-tab" data-view="settings">⚙️ Settings</button>
+  </nav>
+
+  <div class="header-status">
+    <div class="status-dot"></div>
+    <span style="font-size:10px;color:var(--text-2)">LIVE</span>
+    <span style="color:var(--text-3)">|</span>
+    <select id="symbol-select" style="background:transparent;border:1px solid var(--border);color:var(--text-0);font-family:inherit;font-size:11px;padding:3px 6px;border-radius:4px;cursor:pointer;outline:none;">
+      <option>BTCUSDT</option>
+      <option>ETHUSDT</option>
+      <option>SOLUSDT</option>
+      <option>BNBUSDT</option>
+      <option>XRPUSDT</option>
+    </select>
+    <span id="header-price" style="color:var(--accent-gold);font-size:11px;font-weight:600">--</span>
+    <span style="color:var(--text-3)">|</span>
+    <span class="header-equity" id="header-equity">$10,000.00</span>
+  </div>
+</header>
+
+<!-- ─────────── MAIN LAYOUT ───────────────────────────────────── -->
+<div id="app-main">
+
+  <!-- ── SIDEBAR LEFT ── -->
+  <aside id="sidebar-left">
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Aligned Bias</div>
+      <div class="bias-card" style="border-color:rgba(0,212,255,0.2)">
+        <div class="bias-tf">HTF CONFLUENCE</div>
+        <div class="bias-val neutral" id="aligned-bias">◆ NEUTRAL</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Timeframe Bias</div>
+      <div id="bias-container">
+        <div class="bias-card"><div class="bias-tf">15m</div><div class="bias-val neutral">◆ SCANNING</div></div>
+        <div class="bias-card"><div class="bias-tf">1H</div><div class="bias-val neutral">◆ SCANNING</div></div>
+        <div class="bias-card"><div class="bias-tf">4H</div><div class="bias-val neutral">◆ SCANNING</div></div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Session</div>
+      <div id="session-display">
+        <div class="session-badge off">⏸ Loading...</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Liquidity Map</div>
+      <div id="liquidity-container">
+        <div style="font-size:9px;color:var(--text-3);text-align:center;padding:12px">Loading...</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section" style="border-bottom:none">
+      <div class="sidebar-label">Strategies</div>
+      <div id="strategy-toggles"></div>
+    </div>
+
+  </aside>
+
+  <!-- ── MAIN PANEL ── -->
+  <main id="main-panel">
+
+    <!-- ─── LIVE VIEW ─── -->
+    <div class="view-panel active" id="view-live">
+
+      <!-- Stats Bar -->
+      <div class="stats-bar">
+        <div class="stat-card cyan">
+          <div class="stat-label">Equity</div>
+          <div class="stat-value" id="stat-equity">$10,000</div>
+          <div class="stat-sub">Current balance</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Win Rate</div>
+          <div class="stat-value green" id="stat-wr">--%</div>
+          <div class="stat-sub">Closed trades</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Trades</div>
+          <div class="stat-value" id="stat-trades">0</div>
+          <div class="stat-sub">Total closed</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Drawdown</div>
+          <div class="stat-value red" id="stat-dd">0.00%</div>
+          <div class="stat-sub">Current DD</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-label">Session</div>
+          <div class="stat-value" id="stat-session" style="font-size:13px">--</div>
+          <div class="stat-sub">UTC time</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="stat-label">Live Signals</div>
+          <div class="stat-value gold" id="stat-signals">0</div>
+          <div class="stat-sub">Active setups</div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="chart-container" style="min-height:340px;" id="main-canvas-container">
+        <div class="chart-header">
+          <div class="chart-symbol">
+            <span id="chart-symbol-name">BTCUSDT</span>
+            <span class="chart-price-live" id="chart-live-price"></span>
+          </div>
+          <div class="tf-buttons">
+            <button class="tf-btn active" data-tf="15m">15m</button>
+            <button class="tf-btn" data-tf="1H">1H</button>
+            <button class="tf-btn" data-tf="4H">4H</button>
+          </div>
+        </div>
+        <canvas id="main-canvas"></canvas>
+      </div>
+
+      <!-- Signals -->
+      <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;color:var(--text-1);text-transform:uppercase;">
+          Active Signals
+        </div>
+        <div style="font-size:9px;color:var(--text-3);">BIAS → LIQUIDITY → SWEEP → DISPLACEMENT → MSS → ENTRY</div>
+      </div>
+      <div class="signals-grid" id="signals-container">
+        <div class="empty-state" style="grid-column:1/-1">
+          <div class="empty-icon">⏳</div>
+          <p>Loading market data and scanning for setups...</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ─── BACKTEST VIEW ─── -->
+    <div class="view-panel" id="view-backtest">
+
+      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--text-0);margin-bottom:14px;letter-spacing:0.05em;">
+        📊 Quant Backtesting Engine
+      </div>
+
+      <div class="backtest-controls">
+        <div class="ctrl-group">
+          <label>Symbol</label>
+          <select id="bt-symbol">
+            <option>BTCUSDT</option>
+            <option>ETHUSDT</option>
+            <option>SOLUSDT</option>
+          </select>
+        </div>
+        <div class="ctrl-group">
+          <label>Strategy</label>
+          <select id="bt-strategy">
+            <option value="all">All Strategies</option>
+            <option value="S1">S1 — HTF Sweep→MSS</option>
+            <option value="S2">S2 — Premium/Discount</option>
+            <option value="S3">S3 — HL Sweep</option>
+          </select>
+        </div>
+        <div class="ctrl-group">
+          <label>From</label>
+          <input type="date" id="bt-from" value="2024-01-01">
+        </div>
+        <div class="ctrl-group">
+          <label>To</label>
+          <input type="date" id="bt-to" value="2024-12-31">
+        </div>
+        <div class="ctrl-group">
+          <label>Risk % per trade</label>
+          <input type="number" id="bt-risk" value="1" min="0.1" max="10" step="0.1">
+        </div>
+        <div class="ctrl-group">
+          <label>Min R:R</label>
+          <input type="number" id="bt-minrr" value="2" min="1" max="10" step="0.5">
+        </div>
+        <div class="ctrl-group">
+          <label>ATR Multiplier</label>
+          <input type="number" id="bt-atr" value="1.5" min="0.5" max="5" step="0.1">
+        </div>
+        <div class="ctrl-group" style="display:flex;align-items:flex-end;">
+          <button class="btn-primary" id="run-backtest-btn" style="width:100%;margin-bottom:0">
+            ▶ Run Backtest
+          </button>
+        </div>
+      </div>
+
+      <div id="bt-progress-wrap">
+        <div id="bt-progress-bar"><div id="bt-progress-fill"></div></div>
+        <div id="bt-status">Preparing simulation...</div>
+      </div>
+
+      <div id="bt-results">
+        <div class="empty-state">
+          <div class="empty-icon">📊</div>
+          <p>Configure parameters above and click Run Backtest.<br>
+          Candle-by-candle simulation with no lookahead bias.<br>
+          Monte Carlo analysis included automatically.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ─── ANALYTICS VIEW ─── -->
+    <div class="view-panel" id="view-analytics">
+
+      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--text-0);margin-bottom:14px;">
+        📈 Performance Analytics
+      </div>
+
+      <div class="analytics-grid" id="analytics-content">
+        <div class="analytics-card" style="grid-column:1/-1">
+          <div class="analytics-card-title">Strategy Comparison</div>
+          <div class="empty-state" style="padding:20px">
+            <div class="empty-icon">📉</div>
+            <p>Run a backtest first to populate analytics</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ─── SETTINGS VIEW ─── -->
+    <div class="view-panel" id="view-settings">
+      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--text-0);margin-bottom:14px;">
+        ⚙️ Engine Configuration
+      </div>
+      <div id="settings-panel"></div>
+    </div>
+
+  </main>
+
+  <!-- ── SIDEBAR RIGHT ── -->
+  <aside id="sidebar-right">
+
+    <div>
+      <div class="panel-title">Equity Curve</div>
+      <canvas id="equity-mini-canvas"></canvas>
+      <div class="equity-stats">
+        <div class="eq-stat">
+          <div class="eq-label">Balance</div>
+          <div class="eq-val highlight-green" id="eq-balance">$10,000</div>
+        </div>
+        <div class="eq-stat">
+          <div class="eq-label">Drawdown</div>
+          <div class="eq-val highlight-red" id="eq-dd">0.00%</div>
+        </div>
+        <div class="eq-stat">
+          <div class="eq-label">Trades</div>
+          <div class="eq-val" id="eq-trades">0</div>
+        </div>
+        <div class="eq-stat">
+          <div class="eq-label">Win Rate</div>
+          <div class="eq-val" id="eq-wr">--%</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel-title">Risk Monitor</div>
+      <div class="risk-row">
+        <span class="risk-label">Risk per trade</span>
+        <span class="risk-val ok" id="risk-per-trade">1.00%</span>
+      </div>
+      <div class="risk-row">
+        <span class="risk-label">Daily loss limit</span>
+        <span class="risk-val ok" id="risk-daily-limit">5.00%</span>
+      </div>
+      <div class="risk-row">
+        <span class="risk-label">Open trades</span>
+        <span class="risk-val" id="risk-open">0 / 3</span>
+      </div>
+      <div class="risk-row">
+        <span class="risk-label">Max drawdown</span>
+        <span class="risk-val" id="risk-max-dd">10.00%</span>
+      </div>
+      <div class="risk-row" style="border-bottom:none">
+        <span class="risk-label">Session valid</span>
+        <span class="risk-val ok" id="risk-session">YES</span>
+      </div>
+    </div>
+
+    <div style="flex:1">
+      <div class="panel-title">Alert Log</div>
+      <div id="alert-log">
+        <div style="font-size:9px;color:var(--text-3);text-align:center;padding:16px">No alerts yet</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel-title">SMC Sequence</div>
+      <div style="font-size:9px;line-height:1.9;color:var(--text-2);">
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span style="color:var(--accent-cyan);font-weight:700;">1</span> BIAS confirmation (HTF)
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span style="color:var(--accent-cyan);font-weight:700;">2</span> Map liquidity pools
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span style="color:var(--accent-cyan);font-weight:700;">3</span> Liquidity sweep
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span style="color:var(--accent-cyan);font-weight:700;">4</span> Displacement candle
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span style="color:var(--accent-cyan);font-weight:700;">5</span> Body close structure break
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span style="color:var(--accent-cyan);font-weight:700;">6</span> OB/FVG retracement
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span style="color:var(--accent-cyan);font-weight:700;">7</span> Entry + risk management
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+</div>
+
+<!-- ─────────── TOAST CONTAINER ──────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<!-- ─────────── SCRIPTS ───────────────────────────────────────────── -->
+<script type="module" src="js/main.js"></script>
+
+</body>
+</html>
