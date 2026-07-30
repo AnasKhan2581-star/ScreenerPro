@@ -14,6 +14,77 @@ terms. Result: `composite` is profitable on 6/7 coins on 4h and 1d and 5/6 on 1w
 dead XMR listing is mixed) — same economic strategy on every TF. The Compare page runs all
 4 strategies × 7 coins (daily, all-in, 0.1% fees/side) with 6M/1Y/CAGR/DD/WR/Sharpe.
 
+## `zecdiv` — ZEC 15m MACD absorption divergence (July 2026)
+
+The one **intraday, fixed-R** strategy in the app, and the only TF-locked one: **ZECUSDT, 15m,
+long only**. Everything else here is day-denominated; this is a documented exception (see
+CLAUDE.md) because the setup lives on 15m structure and does not translate to other bars.
+
+**The idea.** Price prints a *lower high* while the MACD line prints a *higher high* — momentum
+building underneath a capped price, i.e. someone absorbing supply. The last leg up into that
+capped high carries the footprint; we buy the retrace into it.
+
+**Rules** (validated 2024-08 → 2026-07, 69,120 bars, all numbers **net of 0.1%/side**):
+
+1. **Divergence.** `P2` = a price swing high (4-bar fractal). `P1` = the most recent swing high
+   at least `minDropPct` **0.5%** above `P2` (without this a 5-cent "lower high" counts as a
+   divergence — it is the second-biggest edge carrier). Separation ≥ `minSep` **32 bars**.
+   `M1`/`M2` = max MACD within ±`pairWin` **6** bars of each high. Require `macd[M2] > macd[M1]`.
+2. **Extension cap — the biggest edge carrier.** `macd/close×100` at `M2` must be ≤ `capPct`
+   **0.05%** (≈ raw MACD **0.25** at ZEC $500). Expressed as % of price because MACD scales with
+   price and ZEC ranged $27→$700 over the sample.
+3. **The leg.** `Y = P2`; `X` = lowest low between `P1` and `Y`. Scan `X → Y` forward from its
+   first candle.
+4. **POI.** Candle `k` with `low(k+2) > high(k)`; `k+1` is the displacement, so
+   **FVG = [open(k+1) → low(k+2)]**. *Purity*: nothing from `k+2` onward re-enters
+   `[low(k), high(k)]`. A candidate failing a gate is skipped and the next is tested.
+5. **Zone frozen at `Y`.** `top` = lowest low over `[k+2, Y]`, floored at `open(k+1)`. Measuring
+   to the trigger bar instead counts the entry retrace itself as mitigation and kills every valid
+   setup (benched: expR 0.210 vs 0.759).
+6. **Entry** `top − 0.6 × (top − low(k))`, rounded to the 0.01 tick (orders rest on ticks, not on
+   raw fib maths — an unrounded level missed a real fill by 0.2 of a cent).
+   **SL** `entry × 0.99`, **TP** `entry × 1.05` — fixed 1:5. Trigger `t = P2 + 4`; fill from `t+1`
+   when `low ≤ entry`; cancel after **36 bars** unfilled. One position at a time.
+
+**Benchmark:** n=46, **WR 32.6%**, expectancy **+0.759R**, PF 1.88, **+39.1% net**, maxDD 8.1%,
+6/9 quarters positive, worst quarter −4.7%, positive in all 3 chronological folds
+(0.47 / 1.21 / 0.65). Breakeven WR at 1:5 is 16.7% gross, **~20% net** — fees are ~20% of risk
+when the stop is 1%, so gross figures are meaningless for this strategy.
+
+**Cap calibration & the plateau.** The user's chart rule was "MACD peak below 1.05". Swept as a
+% of price the result is monotone and the optimum is *far tighter*:
+
+| cap (% of px) | ≈ raw @ $495 | n | WR | expR | net | maxDD |
+|---|---|---|---|---|---|---|
+| 0.2118 (=1.05) | 1.05 | 118 | 22.9% | 0.174 | +18.4% | 18.3% |
+| 0.15 | 0.74 | 85 | 23.5% | 0.213 | +16.7% | 17.9% |
+| 0.075 | 0.37 | 52 | 30.8% | 0.649 | +37.3% | 7.0% |
+| **0.05** | **0.25** | **46** | **32.6%** | **0.759** | **+39.1%** | **8.1%** |
+| 0.025 | 0.12 | 41 | 34.1% | 0.851 | +39.3% | 7.0% |
+| 0.0 | 0.00 | 37 | 29.7% | 0.587 | +22.5% | 7.0% |
+| −0.05 | −0.25 | 25 | 24.0% | 0.245 | +5.5% | 10.3% |
+
+A flat **plateau from 0.0 to 0.075** with sharp falloff both sides — a plateau, not a fitted
+spike. The real rule: *the MACD higher high must still be at or barely above the zero line.*
+User chose 0.05 (July 2026), accepting that it rejects their own charted Jul-20 winner
+(M2 = 0.1435%). Do not re-tune this without re-running the fold test.
+
+**Rejected / inert — do not re-test without new evidence:**
+- **Freshness gate (`minFresh`)** — provably inert: disabling it produced a *bit-identical* trade
+  list. Winners average fresh 0.911 vs losers 0.941 (no separation).
+- **FVG size gate (`minFvgPct`)** — near-inert (+57.1% vs +60.9% at the stage-1 optimum).
+  Both kept as loose, non-binding inputs (0.3 / 0.10%) so the rule stays expressible.
+- **Purity gate** — *costs* ~10 points of return (+39.1% with vs +49.1% without) and does not
+  separate winners from losers. **Kept deliberately** (user decision, July 2026): it is what makes
+  the POI a footprint rather than any gap.
+- **Re-arming the next POI after an expiry** — worse (expR 0.279 vs 0.360).
+- **Consecutive-MACD-pivot pairing and a ±3-bar pair window** — missed the user's own setups; the
+  MACD peak lags the price high by up to 5 bars and intervening minor pivots break consecutiveness.
+- **HTF liquidity bias** — deferred by the user, not yet benched. `runZecDiv` keeps the hook.
+
+**Chart timezone note.** The user's screenshots are IST (UTC+5:30); Binance klines are UTC.
+Bars were matched by OHLC fingerprint before any rule was trusted.
+
 ## `cycle` — the BTC halving playbook (July 2026)
 
 BTC-specific full-cycle machine built from the signals that repeated at every cycle turn

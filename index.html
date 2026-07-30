@@ -98,6 +98,7 @@
       <option value="cycle" selected>BTC Cycle · halving playbook</option>
       <option value="tsmom">Trend Follow · CTA momentum</option>
       <option value="donch">Turtle · channel breakout</option>
+      <option value="zecdiv">ZEC Divergence · 15m intraday</option>
     </select>
   </label>
   <label class="cc">Symbol<input id="sym" class="sym" value="BTCUSDT" list="symList" /></label>
@@ -252,10 +253,12 @@ function equityStats(trades, cap0, investPct){
     if(eq<=0) break;
   }
   const yrs = candles.length>1 ? (candles[candles.length-1].time-candles[0].time)/31557600 : 1;
+  // dSum counts BARS — convert with the real bar spacing so intraday TFs don't report 15m bars as days
+  const bpd = candles.length>1 ? 86400/Math.max(60, candles[1].time-candles[0].time) : 1;
   return { cap0, final:eq, netPL:eq-cap0, ret:(eq-cap0)/cap0,
     cagr: eq>0 ? Math.pow(eq/cap0, 1/Math.max(yrs,0.1))-1 : -1,
     closed:w+l, w, l, maxDD, expo: candles.length? daysIn/candles.length : 0,
-    avgMove:(w+l)?mvSum/(w+l):0, avgDays:(w+l)?dSum/(w+l):0,
+    avgMove:(w+l)?mvSum/(w+l):0, avgDays:(w+l)?dSum/(w+l)/bpd:0,
     pf: gl>0 ? gp/gl : (gp>0?Infinity:0), winRate:(w+l)? w/(w+l):0, ledger };
 }
 // renders BOTH the trade ledger (with per-trade $ P/L + running balance) and the summary grid
@@ -288,7 +291,7 @@ function backtest(){
     <div class="cell"><div class="k">Profit factor</div><div class="v">${s.pf===Infinity?'∞':s.pf.toFixed(2)}</div></div>
     <div class="cell"><div class="k">Max drawdown</div><div class="v down">-${(s.maxDD*100).toFixed(1)}%</div></div>
     <div class="cell"><div class="k">Time in market</div><div class="v">${(s.expo*100).toFixed(0)}%</div></div>
-    <div class="cell"><div class="k">Avg hold</div><div class="v ${sign(s.avgMove)}">${(s.avgMove*100>=0?'+':'')}${(s.avgMove*100).toFixed(1)}% <span style="font-size:11px;color:var(--muted)">· ${Math.round(s.avgDays)}d</span></div></div>
+    <div class="cell"><div class="k">Avg hold</div><div class="v ${sign(s.avgMove)}">${(s.avgMove*100>=0?'+':'')}${(s.avgMove*100).toFixed(1)}% <span style="font-size:11px;color:var(--muted)">· ${s.avgDays>=1? Math.round(s.avgDays)+'d' : Math.max(1,Math.round(s.avgDays*24))+'h'}</span></div></div>
     <div class="cell"><div class="k">Closed holds</div><div class="v">${s.closed}</div></div>`;
 }
 
@@ -419,6 +422,7 @@ const STRAT_INFO = {
   cycle: '<b>BTC Cycle (halving playbook)</b> — signals that repeated at every cycle turn since 2015 (2013 documented): BUY when ≥2 of {price at the 200-week MA, Mayer&lt;0.8, weekly RSI&lt;35} + a sweep-reclaim or 20-day breakout. Accumulation is TWO tranches: half in zone A (200w→×1.1), half on the deep-zone recovery (0.72–1.0×200w — every real bottom pierces the 200w), entry = tranche average, stop 0.65×200w (under the deepest pierce on record). SELL on the Pi-Cycle cross (2017 & Apr-2021 tops to the day) or a persistent 40-week break. BTC-specific.',
   tsmom: '<b>Trend Follow (CTA momentum)</b> — long while price closes above its 200-day average AND the 90-day return is positive; 100% in cash otherwise. Rides bull markets, sits out bears. Low win rate, huge winners — the core system of trend funds like AQR and Man AHL.',
   donch: '<b>Turtle (channel breakout)</b> — buys a close above the 55-day high, exits on a close below the 20-day low (2×ATR initial stop). The original managed-futures system: many small losses, a few enormous riders.',
+  zecdiv: '<b>ZEC Divergence (15m intraday)</b> — <i>ZECUSDT on 15m only.</i> Price prints a LOWER HIGH while the MACD line prints a HIGHER HIGH: momentum building under a capped price = absorption. We buy the retrace into the footprint that leg left behind — the first purely unmitigated candle (untouched by any later wick) and its fresh FVG, entering at 0.6 of the band from the FVG top down to the candle low. Fixed <b>1% stop, 5% target (1:5)</b>, order expires after 36 bars unfilled. The decisive filter is the <b>MACD extension cap</b>: the higher high must still sit at or barely above the zero line (≤0.05% of price ≈ 0.25 raw at $500) — take it while momentum is turning, not after it has already gone positive. Benched 2024-08→2026-07 net of fees: 46 trades, <b>32.6% win rate</b>, +0.76R expectancy, PF 1.88, +39.1%, max drawdown 8.1%, positive in all 3 chronological folds.',
 };
 const stratInfo=()=>{ $('stratInfo').innerHTML = STRAT_INFO[$('strategy').value] || ''; };
 // the ADVISOR: current stance + every context signal, from the last closed candle
@@ -545,7 +549,15 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>show
 
 $('run').addEventListener('click', run);
 $('recalc').addEventListener('click', recalc);
-$('strategy').addEventListener('change', ()=>{ stratInfo(); recalc(); });
+// zecdiv is TF-locked to ZEC 15m (see ALGORITHM.md) — snap the controls rather than
+// render meaningless results on whatever symbol/TF happened to be loaded
+$('strategy').addEventListener('change', ()=>{
+  stratInfo();
+  if($('strategy').value==='zecdiv' && ($('sym').value!=='ZECUSDT' || $('tf').value!=='15m')){
+    $('sym').value='ZECUSDT'; $('tf').value='15m'; run(); return;
+  }
+  recalc();
+});
 $('liq').addEventListener('change', recalc);
 $('sym').addEventListener('keydown', e=>{ if(e.key==='Enter') run(); });
 $('tf').addEventListener('change', run);
