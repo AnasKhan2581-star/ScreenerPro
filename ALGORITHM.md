@@ -14,76 +14,98 @@ terms. Result: `composite` is profitable on 6/7 coins on 4h and 1d and 5/6 on 1w
 dead XMR listing is mixed) — same economic strategy on every TF. The Compare page runs all
 4 strategies × 7 coins (daily, all-in, 0.1% fees/side) with 6M/1Y/CAGR/DD/WR/Sharpe.
 
-## `zecdiv` — ZEC 15m MACD absorption divergence (July 2026)
+## REJECTED: `zecdiv` — ZEC 15m MACD absorption divergence (built & removed July 2026)
 
-The one **intraday, fixed-R** strategy in the app, and the only TF-locked one: **ZECUSDT, 15m,
-long only**. Everything else here is day-denominated; this is a documented exception (see
-CLAUDE.md) because the setup lives on 15m structure and does not translate to other bars.
+Built, benched, shipped, then **removed by the user** ("that strategy is not working"). Recorded
+here so it is not rebuilt. Setup: price lower high + MACD line higher high (absorption), buy the
+0.6 retrace into an unmitigated candle + its FVG, fixed 1% SL / 5% TP.
 
-**The idea.** Price prints a *lower high* while the MACD line prints a *higher high* — momentum
-building underneath a capped price, i.e. someone absorbing supply. The last leg up into that
-capped high carries the footprint; we buy the retrace into it.
+Backtest was *positive* on paper — 46 trades, WR 32.6%, +0.759R, PF 1.88, +39.1%, maxDD 8.1%,
+2024-08→2026-07 net of fees, positive in all 3 chronological folds. It still failed the user's
+real bar. Why it was dropped, and the lessons that carry forward:
 
-**Rules** (validated 2024-08 → 2026-07, 69,120 bars, all numbers **net of 0.1%/side**):
+- **Too few trades to trust.** 46 trades in two years on 15m is ~2/month. At a 32.6% win rate
+  that is a long, demoralising losing run between wins — statistically fine, practically unusable.
+- **All the edge sat in one knob.** The MACD extension cap; every SMC gate was inert or negative
+  (freshness disabling produced a *bit-identical* trade list; purity cost ~10 points of return).
+  A strategy resting on one threshold is a fitted threshold, not a mechanism.
+- **Fixed 1% stop ignores ZEC's volatility regime.** ZEC ranged $27→$700 over the sample; a
+  constant % stop is far too tight in high-vol regimes and too loose in quiet ones. **Any future
+  ZEC intraday strategy must scale stops by ATR, not by a fixed percentage.**
+- **Fees dominate tight stops.** 0.1%/side on a 1% stop is ~0.2R per trade — 20% of risk, which
+  pushed breakeven WR from 16.7% to ~20%.
 
-1. **Divergence.** `P2` = a price swing high (4-bar fractal). `P1` = the most recent swing high
-   at least `minDropPct` **0.5%** above `P2` (without this a 5-cent "lower high" counts as a
-   divergence — it is the second-biggest edge carrier). Separation ≥ `minSep` **32 bars**.
-   `M1`/`M2` = max MACD within ±`pairWin` **6** bars of each high. Require `macd[M2] > macd[M1]`.
-2. **Extension cap — the biggest edge carrier.** `macd/close×100` at `M2` must be ≤ `capPct`
-   **0.05%** (≈ raw MACD **0.25** at ZEC $500). Expressed as % of price because MACD scales with
-   price and ZEC ranged $27→$700 over the sample.
-3. **The leg.** `Y = P2`; `X` = lowest low between `P1` and `Y`. Scan `X → Y` forward from its
-   first candle.
-4. **POI.** Candle `k` with `low(k+2) > high(k)`; `k+1` is the displacement, so
-   **FVG = [open(k+1) → low(k+2)]**. *Purity*: nothing from `k+2` onward re-enters
-   `[low(k), high(k)]`. A candidate failing a gate is skipped and the next is tested.
-5. **Zone frozen at `Y`.** `top` = lowest low over `[k+2, Y]`, floored at `open(k+1)`. Measuring
-   to the trigger bar instead counts the entry retrace itself as mitigation and kills every valid
-   setup (benched: expR 0.210 vs 0.759).
-6. **Entry** `top − 0.6 × (top − low(k))`, rounded to the 0.01 tick (orders rest on ticks, not on
-   raw fib maths — an unrounded level missed a real fill by 0.2 of a cent).
-   **SL** `entry × 0.99`, **TP** `entry × 1.05` — fixed 1:5. Trigger `t = P2 + 4`; fill from `t+1`
-   when `low ≤ entry`; cancel after **36 bars** unfilled. One position at a time.
+Do not rebuild it. If revisiting divergence on ZEC, the only reusable finding is that a MACD
+higher high *far above the zero line* marks an exhausted leg — useful as a **filter inside another
+strategy**, not as a strategy on its own.
 
-**Benchmark:** n=46, **WR 32.6%**, expectancy **+0.759R**, PF 1.88, **+39.1% net**, maxDD 8.1%,
-6/9 quarters positive, worst quarter −4.7%, positive in all 3 chronological folds
-(0.47 / 1.21 / 0.65). Breakeven WR at 1:5 is 16.7% gross, **~20% net** — fees are ~20% of risk
-when the stop is 1%, so gross figures are meaningless for this strategy.
+## `liqbrk` - buy-side liquidity continuation (July 2026)
 
-**Cap calibration & the plateau.** The user's chart rule was "MACD peak below 1.05". Swept as a
-% of price the result is monotone and the optimum is *far tighter*:
+The app's first intraday-native strategy, built for **ZEC 15m** but day-denominated so it runs on
+any TF. Long only.
 
-| cap (% of px) | ≈ raw @ $495 | n | WR | expR | net | maxDD |
+**The finding that drove it.** Three original liquidity strategies were built and all three lost
+money in *every* fold (see the rejection list below). A forward-return study explained why: on ZEC
+15m the classic SMC premise is inverted. Measuring the +96-bar forward return from the next open,
+against an unconditional baseline of **+0.647%**:
+
+| feature | weakest bucket | strongest bucket |
+|---|---|---|
+| position in the 96-bar range | bottom 20% ("discount") **-0.022%** | top 20% (breakout) **+1.645%**, 54% up |
+| distance from rolling VWAP | below VWAP +0.19% | > +3 ATR above **+1.501%**, 55% up |
+| RSI(14) | 25-40 -> +0.31% | **>75 -> +1.867%**, 57% up |
+| 96-bar momentum | -3...+3% -> +0.129% | **>+8% -> +1.932%** |
+| ATR% of price | mid -> +0.30% | **>1.2% -> +2.218%** |
+| hour of day (UTC) | 0.629% | 0.667% - **no session edge at all** |
+
+Monotone in the same direction on every feature. **Buying "discount" on ZEC 15m returns less than a
+random entry.** Strength continues; weakness does not revert. A breakout *is* a liquidity event -
+short stops and resting breakout orders sit above the prior high - so the correct trade is to join
+the raid, not fade it.
+
+**Rules** (all params day-denominated; `S(d)` = d days in bars):
+1. **Entry** - the FIRST close above the prior `lbBreak` **2-day** high (the BSL pool),
+   **and** close > the `lbTrend` **5-day** SMA, **and** volume >= `lbRelVol` **1.3x** its 1-day average.
+2. **Stop** - `lbStop` **3 x ATR** of the trading timeframe. Deliberately bar-native, not a fixed %:
+   ZEC ran $21->$750 in the sample and a constant-% stop is the documented reason `zecdiv` failed.
+3. **Exit** - trail out on a close below the prior `lbExit` **1-day** low, or the stop.
+
+**Benchmark, ZEC 15m, 69,120 bars (2024-08 -> 2026-07), net of 0.1%/side:**
+
+| model | trades | WR | PF | return | maxDD | time in market |
 |---|---|---|---|---|---|---|
-| 0.2118 (=1.05) | 1.05 | 118 | 22.9% | 0.174 | +18.4% | 18.3% |
-| 0.15 | 0.74 | 85 | 23.5% | 0.213 | +16.7% | 17.9% |
-| 0.075 | 0.37 | 52 | 30.8% | 0.649 | +37.3% | 7.0% |
-| **0.05** | **0.25** | **46** | **32.6%** | **0.759** | **+39.1%** | **8.1%** |
-| 0.025 | 0.12 | 41 | 34.1% | 0.851 | +39.3% | 7.0% |
-| 0.0 | 0.00 | 37 | 29.7% | 0.587 | +22.5% | 7.0% |
-| −0.05 | −0.25 | 25 | 24.0% | 0.245 | +5.5% | 10.3% |
+| risk-based (1% equity/trade) | 134 | 33.6% | 2.91 | **+304%** | **13.5%** | 24% |
+| exposure, Invest 100% | 134 | 33.6% | 2.91 | +683% | 38.3% | 24% |
+| buy & hold | - | - | - | +1086% | **74.0%** | 100% |
 
-A flat **plateau from 0.0 to 0.075** with sharp falloff both sides — a plateau, not a fitted
-spike. The real rule: *the MACD higher high must still be at or barely above the zero line.*
-User chose 0.05 (July 2026), accepting that it rejects their own charted Jul-20 winner
-(M2 = 0.1435%). Do not re-tune this without re-running the fold test.
+Positive in **all three chronological folds**; 6/9 quarters positive with the losing quarters
+trivial (-1.0%, -2.2%, -0.6%) against wins of +86.8%, +39.5%, +39.8%.
 
-**Rejected / inert — do not re-test without new evidence:**
-- **Freshness gate (`minFresh`)** — provably inert: disabling it produced a *bit-identical* trade
-  list. Winners average fresh 0.911 vs losers 0.941 (no separation).
-- **FVG size gate (`minFvgPct`)** — near-inert (+57.1% vs +60.9% at the stage-1 optimum).
-  Both kept as loose, non-binding inputs (0.3 / 0.10%) so the rule stays expressible.
-- **Purity gate** — *costs* ~10 points of return (+39.1% with vs +49.1% without) and does not
-  separate winners from losers. **Kept deliberately** (user decision, July 2026): it is what makes
-  the POI a footprint rather than any gap.
-- **Re-arming the next POI after an expiry** — worse (expR 0.279 vs 0.360).
-- **Consecutive-MACD-pivot pairing and a ±3-bar pair window** — missed the user's own setups; the
-  MACD peak lags the price high by up to 5 bars and intervening minor pivots break consecutiveness.
-- **HTF liquidity bias** — deferred by the user, not yet benched. `runZecDiv` keeps the hook.
+**It is a plateau, not a fitted cell** - this is the key robustness evidence. Holding everything
+else fixed: breakout length 96/144/192 bars all return 245-262%; stop 2.5-4 ATR all work (wider
+stop => higher WR, lower DD, monotone); exit length 96/192 both ~250-284%; and the relVol and trend
+filters change the result by only a few points. The **mechanism** carries the edge, not a threshold -
+the opposite of `zecdiv`, where one knob carried everything.
 
-**Chart timezone note.** The user's screenshots are IST (UTC+5:30); Binance klines are UTC.
-Bars were matched by OHLC fingerprint before any rule was trusted.
+**Cross-market check** (1% risk): positive on 4/6 coins at 1d (BTC 40% WR / PF 1.46 - ZEC 38%/2.59 -
+SOL 44%/2.83 - XRP 28%/2.85 - SUI 35%/1.77 - LINK 41%/1.25) and 4/6 at 4h. Strongest where it was
+designed, merely decent elsewhere - the signature of a real effect rather than a curve fit.
+
+**REJECTED on the way here - do not rebuild** (all three lost in every fold, and the excursion study
+showed their signal bars were statistically indistinguishable from random bars):
+- **S1 stop-run reclaim** - SSL pool raided then reclaimed, bullish candle, volume >=1.5x, buy only
+  in discount. n=643, WR 33.0%, PF 0.75, **9/9 losing quarters**. The discount filter was actively
+  harmful.
+- **S2 session liquidity** - Asian-range (00:00-08:00 UTC) low swept and reclaimed during the
+  London/NY window. n=201, WR 45.8% but PF 0.66. Decent hit rate, negative expectancy, and the
+  hour-of-day scan later showed **no session edge at all** on this pair.
+- **S3 liquidation-cascade fade** - price >=2 ATR below rolling VWAP on a volume spike, reversal bar,
+  target VWAP. n=435, WR 36.1%, PF 0.65, 9/9 losing quarters. Fading extension is backwards here.
+
+**Engine bug this exposed** (fixed July 2026): `runQuant` guarded *every* strategy with
+`if (n < maLen + 2) return` and started its loop at `maLen`, where `maLen` is the **200-day** MA -
+19,200 bars on 15m. Any intraday strategy therefore returned **zero trades** on windows shorter
+than 200 days, silently. Warm-up is now per strategy.
 
 ## `cycle` — the BTC halving playbook (July 2026)
 

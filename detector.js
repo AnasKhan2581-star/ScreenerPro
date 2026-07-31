@@ -28,22 +28,8 @@
 
   const DEFAULTS = {
     strategy: 'cycle', // quant: 'cycle' = BTC halving playbook | 'tsmom' = CTA trend | 'donch' = turtle breakout
-                     // intraday: 'zecdiv' = ZEC 15m MACD absorption divergence (TF-locked, fixed-R)
+                     //        'liqbrk' = buy-side liquidity continuation (intraday-first)
                      // smc: 'regime' | 'fvg' | 'momo' | 'scalp' (kept for reference/experiments)
-    // --- zecdiv (ZEC 15m only; bar-denominated by design, see ALGORITHM.md) ---
-    zdFast: 12, zdSlow: 26,   // MACD line = EMA(12) − EMA(26), seeded with SMA like Pine's ta.ema
-    zdPivotK: 4,      // fractal half-width for price swing highs (a pivot is KNOWN only at i+K)
-    zdPairWin: 6,     // the MACD peak belonging to a price high = max MACD within ±this many bars
-    zdMinSep: 32, zdMaxSep: 200,  // allowed distance between the two divergence swings
-    zdMinDrop: 0.5,   // P2 must be this % BELOW P1 — without it a few-tick "lower high" qualifies
-    zdCapPct: 0.05,   // macd/close×100 ceiling at M2 (≈0.25 raw at ZEC $500). THE edge carrier.
-    zdMinFvgPct: 0.10,// FVG height as % of price — loose by design, benched inert
-    zdMinFresh: 0.3,  // unfilled fraction of the FVG — loose by design, benched bit-identical
-    zdFib: 0.6,       // entry depth: top − 0.6×(top − POI low)
-    zdSl: 1.0, zdTp: 5.0,  // fixed 1:5 — stop 1% below entry, target 5% above
-    zdExpiry: 36,     // bars an unfilled limit order survives (no structure cancel: on continuous
-                      // 15m data price must cross the entry to reach low(k), so we'd already be in)
-    zdTick: 0.01,     // ZECUSDT price tick — orders rest on ticks, not on raw fib maths
     cyclePersist: 5, // cycle: days beyond the 40w band before a trend entry/exit confirms
     volTarget: 0.3,  // advisor sizing suggestion: annualized vol target / realized vol, capped at 1
     persist: 3,      // tsmom: entry signal must hold this many consecutive days (whipsaw filter)
@@ -52,6 +38,13 @@
     donchIn: 55,     // donch: entry = close above the n-day high (Turtle S2)
     donchOut: 20,    // donch: exit = close below the n-day low
     qStop: 2.0,      // tsmom/donch: initial stop ×ATR below entry (risk unit for R accounting)
+    // --- liqbrk: buy-side liquidity continuation (intraday-first, works on any TF) ---
+    lbBreak: 2,      // entry = close above the prior n-DAY high (the BSL pool being raided)
+    lbExit: 1,       // trail exit = close below the prior n-day low
+    lbTrend: 5,      // regime gate: only long while close > the n-day SMA
+    lbStop: 3.0,     // initial stop = n × ATR of the TRADING timeframe (bar-native on purpose:
+                     // ZEC ran $21→$750, so the stop must breathe with realized volatility)
+    lbRelVol: 1.3,   // the breakout must trade ≥ this × its 1-day average volume
     longOnly: false, // investment/spot mode: never short (structure is still tracked both ways)
     regimeExit: 'daily', // 'daily' = exit on base-TF CHoCH too (benched: best drawdown control) | 'weekly' = HTF flip only
     momoBosOnly: false, // momentum: true = continuation breaks only, skip CHoCH reversal entries
@@ -283,7 +276,11 @@
     const sf = Math.max(0.8, Math.sqrt(bpd));   // floor: above-daily TFs keep a workable stop distance
     const maLen = S(p.tsmomMa), lookLen = S(p.tsmomLook), inLen = S(p.donchIn), outLen = S(p.donchOut),
       w20 = S(20), volWin = S(30);
-    if (n < maLen + 2) return { trades, advice: null };
+    // Warm-up is PER STRATEGY. maLen is the 200-day MA — on 15m that is 19,200 bars, so guarding
+    // every strategy with it silently returned zero trades for the intraday systems on any window
+    // shorter than 200 days (liqbrk needs 5 days, not 200).
+    const warm = p.strategy === 'liqbrk' ? Math.max(S(p.lbTrend), S(p.lbBreak), S(1)) + 2 : maLen;
+    if (n < warm + 2) return { trades, advice: null };
     const closes = c.map((x) => x.close);
     const sma = (len) => {
       const out = new Array(n).fill(NaN);
@@ -334,6 +331,31 @@
     const magnetOK = (i, px) => !p.liqTargets || !(pools && pools.length) || (() => { const b = liqBal(i, px); return b.up >= b.dn; })();
     const compScore = (i, px) => (px > maL[i] ? 1 : 0) + (i >= lookLen && px > closes[i - lookLen] ? 1 : 0) + (px > (hiN[i] + loIn[i]) / 2 ? 1 : 0);
 
+    // LIQBRK precompute — a breakout IS a liquidity event: the stops of shorts plus resting
+    // breakout orders sit above the prior n-day high, and taking them is what fuels continuation.
+    // Benched on ZEC 15m (69k bars): the forward-return scan showed top-of-range / above-VWAP /
+    // high-RSI states return 2–3× baseline MONOTONICALLY, while "discount" states returned LESS
+    // than random. So we join the raid instead of fading it. See ALGORITHM.md.
+    let lb = null;
+    if (p.strategy === 'liqbrk') {
+      const bL = S(p.lbBreak), eL = S(p.lbExit), vL = Math.max(2, S(1));
+      const hiB = new Array(n).fill(Infinity), loE = new Array(n).fill(-Infinity), rv = new Array(n).fill(1);
+      for (let i = 1; i < n; i++) {
+        let h = -Infinity, l = Infinity;
+        for (let j = Math.max(0, i - bL); j < i; j++) if (c[j].high > h) h = c[j].high;
+        for (let j = Math.max(0, i - eL); j < i; j++) if (c[j].low < l) l = c[j].low;
+        hiB[i] = h; loE[i] = l;
+      }
+      let vs = 0;
+      for (let i = 0; i < n; i++) {
+        const v = c[i].volume || 0;
+        vs += v; if (i >= vL) vs -= (c[i - vL].volume || 0);
+        const avg = vs / Math.min(i + 1, vL);
+        rv[i] = avg > 0 ? v / avg : 1;
+      }
+      lb = { hiB, loE, rv, maT: sma(S(p.lbTrend)) };
+    }
+
     let pos = null, sigRun = 0;
     const close = (i, exit, why) => {
       const risk0 = pos.entry - pos.stop;
@@ -376,7 +398,7 @@
     const cyPersist = Math.max(1, S(p.cyclePersist));
 
     const persistN = Math.max(1, S(p.persist));                   // persistence is day-denominated too
-    for (let i = maLen; i < n; i++) {
+    for (let i = warm; i < n; i++) {
       const px = closes[i];
       if (p.strategy === 'cycle') {
         const above = px > cy.ma280[i] * 1.02, below = px < cy.ma280[i] * 0.97;
@@ -419,6 +441,14 @@
         sigRun = on ? sigRun + 1 : 0;
         if (!pos && sigRun >= persistN && magnetOK(i, px)) pos = { entry: px, stop: px - p.qStop * sf * a[i], entryIdx: i };
         else if (pos && !on) close(i, px, 'TREND');
+      } else if (p.strategy === 'liqbrk') {
+        if (pos) {
+          if (c[i].low <= pos.stop) close(i, pos.stop, 'STOP');
+          else if (px < lb.loE[i]) close(i, px, 'TRAIL');
+        } else if (px > lb.hiB[i] && closes[i - 1] <= lb.hiB[i - 1]   // FIRST close through the pool
+                   && px > lb.maT[i] && lb.rv[i] >= p.lbRelVol && magnetOK(i, px)) {
+          pos = { entry: px, stop: px - p.lbStop * a[i], entryIdx: i };
+        }
       } else {                                                     // donch
         if (pos) {
           if (c[i].low <= pos.stop) close(i, pos.stop, 'STOP');
@@ -440,7 +470,11 @@
     const b = liqBal(i, px);
     const advice = {
       px, stance: (trades.length && trades[trades.length - 1].outcome === 'open') ? 'IN' : 'CASH',
-      signals: [
+      signals: lb ? [
+        { name: `Above the ${p.lbTrend}-day trend average`, ok: px > lb.maT[i] },
+        { name: `Broke the ${p.lbBreak}-day high (liquidity taken)`, ok: px > lb.hiB[i] },
+        { name: `Volume ≥ ${p.lbRelVol}× its daily average`, ok: lb.rv[i] >= p.lbRelVol },
+      ] : [
         { name: 'Above 200-day average', ok: px > maL[i] },
         { name: '90-day momentum positive', ok: px > closes[i - lookLen] },
         { name: 'Above 55-day channel mid', ok: px > (hiN[i] + loIn[i]) / 2 },
@@ -462,111 +496,6 @@
       cycleLines = { zLo: cy.ma1400, trend: cy.ma280, ma200: maL };   // UI projects buy band (200w→×1.1) and sell band (1.85–2.4×200d)
     }
     return { trades, advice, cycleLines };
-  }
-
-  // ---- zecdiv: ZEC 15m MACD absorption divergence -> unmitigated-candle FVG tap ----
-  // Price prints a LOWER HIGH while the MACD line prints a HIGHER HIGH: momentum building under a
-  // capped price = absorption. We buy the retrace into the footprint that leg left behind.
-  //   X = lowest low before the lower high Y; POI is scanned in X→Y from its FIRST candle.
-  //   POI = candle k, k+1 = displacement, so FVG = [open(k+1) → low(k+2)].
-  //   Entry = fvgTop − 0.6×(fvgTop − low(k)); SL = entry×0.99; TP = entry×1.05 (fixed 1:5).
-  // The MACD cap at M2 is what carries the edge — see the plateau table in ALGORITHM.md.
-  // Strictly causal: a fractal is only KNOWN at i+K, and the zone is frozen at Y (< trigger).
-  function runZecDiv(c, p) {
-    const n = c.length, closes = c.map((x) => x.close), trades = [];
-    // EMA seeded with SMA(len) so values match TradingView/Pine exactly
-    const ema = (v, len) => {
-      const o = new Array(n).fill(NaN), al = 2 / (len + 1);
-      let s = 0;
-      for (let i = 0; i < n; i++) {
-        s += v[i];
-        if (i === len - 1) o[i] = s / len; else if (i >= len) o[i] = v[i] * al + o[i - 1] * (1 - al);
-      }
-      return o;
-    };
-    const f = ema(closes, p.zdFast), sl = ema(closes, p.zdSlow);
-    const macd = closes.map((_, i) => (isFinite(f[i]) && isFinite(sl[i])) ? f[i] - sl[i] : NaN);
-    const macdPct = macd.map((m, i) => (isFinite(m) ? m / closes[i] * 100 : NaN));
-    const K = Math.max(1, p.zdPivotK), pHi = [];
-    for (let i = K; i < n - K; i++) {
-      let ok = true;
-      for (let j = 1; j <= K && ok; j++) if (!(c[i].high >= c[i - j].high) || !(c[i].high >= c[i + j].high)) ok = false;
-      if (ok) pHi.push(i);
-    }
-    const peakNear = (idx, ahead) => {                    // ahead ≤ K so nothing past the trigger is read
-      let best = idx, bv = -Infinity;
-      for (let j = Math.max(0, idx - p.zdPairWin); j <= Math.min(n - 1, idx + ahead); j++)
-        if (isFinite(macd[j]) && macd[j] > bv) { bv = macd[j]; best = j; }
-      return best;
-    };
-    const tk = (v) => Math.round(v / p.zdTick) * p.zdTick;
-    let busyUntil = -1, live = null;                      // one position at a time
-
-    for (let z = 0; z < pHi.length; z++) {
-      const P2 = pHi[z];
-      let P1 = -1;
-      for (let y = z - 1; y >= 0; y--) {                  // most recent MEANINGFULLY higher swing high
-        const q = pHi[y];
-        if (P2 - q > p.zdMaxSep) break;
-        if ((c[q].high - c[P2].high) / c[P2].high * 100 >= p.zdMinDrop) { P1 = q; break; }
-      }
-      if (P1 < 0 || P2 - P1 < p.zdMinSep) continue;
-      const t = P2 + K;
-      if (t >= n - 2 || t <= busyUntil) continue;
-      const M1 = peakNear(P1, p.zdPairWin), M2 = peakNear(P2, K);
-      if (!isFinite(macd[M1]) || !isFinite(macd[M2])) continue;
-      if (!(macd[M2] > macd[M1])) continue;               // MACD higher high vs price lower high
-      if (!(macdPct[M2] <= p.zdCapPct)) continue;         // the extension cap
-
-      let X = P1 + 1, lo = Infinity;                      // leg base
-      for (let j = P1 + 1; j <= P2; j++) if (c[j].low < lo) { lo = c[j].low; X = j; }
-
-      let g = null;                                       // first POI passing every gate
-      for (let k = X; k <= P2 - 2 && !g; k++) {
-        if (!(c[k + 2].low > c[k].high)) continue;
-        let pure = true;
-        for (let j = k + 2; j <= P2 && pure; j++) if (c[j].low <= c[k].high && c[j].high >= c[k].low) pure = false;
-        if (!pure) continue;
-        const fvgLo = c[k + 1].open, fvgHi = c[k + 2].low, span = fvgHi - fvgLo;
-        if (span <= 0) continue;
-        let top = fvgHi;                                  // zone frozen at Y, NOT at the trigger
-        for (let j = k + 2; j <= P2; j++) if (c[j].low < top) top = c[j].low;
-        if (top < fvgLo) top = fvgLo;
-        if ((top - fvgLo) / span < p.zdMinFresh) continue;
-        if (span / closes[t] * 100 < p.zdMinFvgPct) continue;
-        g = { k, top, low: c[k].low };
-      }
-      if (!g) continue;
-
-      const entry = tk(g.top - p.zdFib * (g.top - g.low));
-      const stop = tk(entry * (1 - p.zdSl / 100)), targ = tk(entry * (1 + p.zdTp / 100));
-      let fill = -1;
-      for (let j = t + 1; j <= Math.min(n - 1, t + p.zdExpiry); j++) if (c[j].low <= entry) { fill = j; break; }
-      if (fill < 0) continue;
-      const sim = simTrade(c, fill, 'long', stop, targ);
-      const exit = sim.outcome === 'win' ? targ : (sim.outcome === 'loss' ? stop : closes[n - 1]);
-      const rMult = (exit - entry) / (entry - stop);
-      trades.push({ dir: 'long', poiIdx: g.k, fvgIdx: g.k + 1, zoneLow: g.low, zoneTop: g.top,
-        sweepIdx: -1, targetPool: 'DIV', entry, stop, target: targ, exitPrice: exit, tp: targ,
-        entryIdx: fill, exitIdx: sim.exitIdx, outcome: sim.outcome, frac: 1,
-        rr: +rMult.toFixed(2), rMult: +rMult.toFixed(4) });
-      busyUntil = sim.exitIdx;
-      if (sim.outcome === 'open') live = trades[trades.length - 1];
-    }
-
-    const i = n - 1, px = closes[i];
-    const advice = {
-      px, stance: live ? 'IN' : 'CASH',
-      signals: [
-        { name: 'MACD line above its signal (momentum up)', ok: macd[i] > (macd[i - 1] || 0) },
-        { name: `MACD not extended (≤ ${p.zdCapPct}% of price)`, ok: macdPct[i] <= p.zdCapPct },
-        { name: 'MACD still at/below the zero line', ok: macd[i] <= 0 },
-      ],
-      z: +(macdPct[i] || 0).toFixed(3), volAnn: 0, alloc: 1, liqUp: 0, liqDn: 0, nearUp: 0, nearDn: 0,
-      zecdiv: { macd: +(macd[i] || 0).toFixed(3), macdPct: +(macdPct[i] || 0).toFixed(4),
-        capPct: p.zdCapPct, capRaw: +(p.zdCapPct / 100 * px).toFixed(2), open: !!live },
-    };
-    return { trades, advice, cycleLines: null };
   }
 
   // ---- arm a resting order after a confirmed break --------------------------
@@ -857,9 +786,8 @@
     const ws = walkStructure(c, extPiv, fvgs, p, a, htfBias, false, pools);
 
     // quant strategies replace the SMC trade stream; structure/pools remain as chart context
-    const zd = p.strategy === 'zecdiv';
-    const quant = zd || ['cycle', 'tsmom', 'donch'].indexOf(p.strategy) >= 0;
-    const rq = zd ? runZecDiv(c, p) : (quant ? runQuant(c, p, a, pools) : null);
+    const quant = ['cycle', 'tsmom', 'donch', 'liqbrk'].indexOf(p.strategy) >= 0;
+    const rq = quant ? runQuant(c, p, a, pools) : null;
     const trades = quant ? rq.trades : ws.trades;
     const longs = trades.filter((t) => t.dir === 'long'), shorts = trades.filter((t) => t.dir === 'short');
     const wins = trades.filter((t) => t.outcome === 'win').length;
@@ -885,7 +813,7 @@
       advice: quant ? rq.advice : null, cycleLines: quant ? rq.cycleLines : null };
   }
 
-  const api = { detectAll, detectPivots, labelStructure, detectFVG, detectUnmitigated, detectLiquidity, detectLiqClusters, armOrder, pickTarget, simTrade, runQuant, runZecDiv, walkStructure, aggregateHTF, computeHtfBias, atr, DEFAULTS };
+  const api = { detectAll, detectPivots, labelStructure, detectFVG, detectUnmitigated, detectLiquidity, detectLiqClusters, armOrder, pickTarget, simTrade, runQuant, walkStructure, aggregateHTF, computeHtfBias, atr, DEFAULTS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.SMC = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -73,6 +73,12 @@
   #bt .cell .k{font-size:11px;color:var(--muted)}
   #bt .cell .v{font-size:16px;font-weight:700}
   .up{color:#3fb950} .down{color:#f85149}
+  .detail{border-top:1px solid var(--line);margin-top:2px}
+  .detail>summary{cursor:pointer;list-style:none;color:var(--muted);font-size:11px;letter-spacing:.5px;text-transform:uppercase;padding:6px 0 4px;user-select:none}
+  .detail>summary::-webkit-details-marker{display:none}
+  .detail>summary:before{content:'▸ ';display:inline-block;transition:transform .12s}
+  .detail[open]>summary:before{transform:rotate(90deg)}
+  .detail>summary:hover{color:var(--txt)}
   /* phone layout (last so it wins the cascade) */
   @media(max-width:768px){
     main{flex-direction:column}
@@ -98,7 +104,7 @@
       <option value="cycle" selected>BTC Cycle · halving playbook</option>
       <option value="tsmom">Trend Follow · CTA momentum</option>
       <option value="donch">Turtle · channel breakout</option>
-      <option value="zecdiv">ZEC Divergence · 15m intraday</option>
+      <option value="liqbrk">Liquidity Breakout · intraday</option>
     </select>
   </label>
   <label class="cc">Symbol<input id="sym" class="sym" value="BTCUSDT" list="symList" /></label>
@@ -153,6 +159,7 @@
         <option value="tsmom">Trend Follow</option>
         <option value="meanrev">Dip Buyer</option>
         <option value="donch">Turtle</option>
+        <option value="liqbrk">Liq Breakout</option>
       </select>
     </label>
     <label>Timeframe
@@ -421,8 +428,8 @@ function recalc(){
 const STRAT_INFO = {
   cycle: '<b>BTC Cycle (halving playbook)</b> — signals that repeated at every cycle turn since 2015 (2013 documented): BUY when ≥2 of {price at the 200-week MA, Mayer&lt;0.8, weekly RSI&lt;35} + a sweep-reclaim or 20-day breakout. Accumulation is TWO tranches: half in zone A (200w→×1.1), half on the deep-zone recovery (0.72–1.0×200w — every real bottom pierces the 200w), entry = tranche average, stop 0.65×200w (under the deepest pierce on record). SELL on the Pi-Cycle cross (2017 & Apr-2021 tops to the day) or a persistent 40-week break. BTC-specific.',
   tsmom: '<b>Trend Follow (CTA momentum)</b> — long while price closes above its 200-day average AND the 90-day return is positive; 100% in cash otherwise. Rides bull markets, sits out bears. Low win rate, huge winners — the core system of trend funds like AQR and Man AHL.',
+  liqbrk: '<b>Liquidity Breakout</b> — buy-side liquidity (short stops + resting breakout orders) piles up above recent highs. When price <b>closes through the 2-day high on above-average volume, in an uptrend</b>, that pool gets taken and the move usually <b>continues</b> — so we join the raid instead of fading it. Stop 3×ATR (scales with volatility, never a fixed %); we trail out on a close below the 1-day low. Built for <b>ZEC 15m</b> after a forward-return study showed the opposite of SMC folklore: on ZEC, top-of-range and above-VWAP states return 2–3× baseline while buying “discount” returns <i>less than random</i>. ZEC 15m net of fees: <b>WR 35–39%</b>, PF 2.7, +251% at 1% risk/trade, max drawdown <b>13%</b> — versus buy &amp; hold +1086% at <b>74%</b> drawdown, and only 24% time in market.',
   donch: '<b>Turtle (channel breakout)</b> — buys a close above the 55-day high, exits on a close below the 20-day low (2×ATR initial stop). The original managed-futures system: many small losses, a few enormous riders.',
-  zecdiv: '<b>ZEC Divergence (15m intraday)</b> — <i>ZECUSDT on 15m only.</i> Price prints a LOWER HIGH while the MACD line prints a HIGHER HIGH: momentum building under a capped price = absorption. We buy the retrace into the footprint that leg left behind — the first purely unmitigated candle (untouched by any later wick) and its fresh FVG, entering at 0.6 of the band from the FVG top down to the candle low. Fixed <b>1% stop, 5% target (1:5)</b>, order expires after 36 bars unfilled. The decisive filter is the <b>MACD extension cap</b>: the higher high must still sit at or barely above the zero line (≤0.05% of price ≈ 0.25 raw at $500) — take it while momentum is turning, not after it has already gone positive. Benched 2024-08→2026-07 net of fees: 46 trades, <b>32.6% win rate</b>, +0.76R expectancy, PF 1.88, +39.1%, max drawdown 8.1%, positive in all 3 chronological folds.',
 };
 const stratInfo=()=>{ $('stratInfo').innerHTML = STRAT_INFO[$('strategy').value] || ''; };
 // the ADVISOR: current stance + every context signal, from the last closed candle
@@ -430,6 +437,30 @@ function advisor(result){
   const ad=result.advice, el=$('advisor');
   if(!ad){ el.textContent='—'; return; }
   const fmtP=(x)=> x>=100? Math.round(x).toLocaleString() : x.toFixed(2);
+
+  // ---- PLAIN ENGLISH FIRST: are we in, with how much, from where, up or down ----
+  const open = result.trades.filter(t=>t.outcome==='open').slice(-1)[0];
+  const investPct = Math.max(0, Math.min(100, +$('risk').value||100));
+  const deployed = open ? investPct*(open.frac!=null?open.frac:1) : 0;
+  const dt = open ? new Date(candles[open.entryIdx].time*1000) : null;
+  const when = dt ? dt.toISOString().slice(0,10)+' '+dt.toISOString().slice(11,16) : '';
+  const now = ad.px, pl = open ? (now/open.entry-1)*100 : 0;
+  const held = open ? candles.length-1-open.entryIdx : 0;
+  const dtBar = candles.length>1 ? Math.max(60,candles[1].time-candles[0].time) : 86400;
+  const heldTxt = held*dtBar>=172800 ? Math.round(held*dtBar/86400)+' days' : Math.round(held*dtBar/3600)+' hours';
+  const bigNum = (txt,col)=>`<div style="font-size:22px;font-weight:800;line-height:1.15;color:${col}">${txt}</div>`;
+  const head = open
+    ? `<div style="padding:2px 0 8px">`
+      + bigNum(`${deployed.toFixed(0)}% of your money is in the market`, '#3fb950')
+      + `<div style="margin-top:5px">Bought at <b>${fmtP(open.entry)}</b> · ${when} <span style="color:var(--muted)">(${heldTxt} ago)</span></div>`
+      + `<div>Now <b>${fmtP(now)}</b> → <b class="${pl>=0?'up':'down'}">${pl>=0?'+':''}${pl.toFixed(1)}%</b> on this position</div>`
+      + `<div style="color:var(--muted)">Protective stop <b style="color:#f85149">${fmtP(open.stop)}</b>${open.tp?` · take-profit ${fmtP(open.tp)}`:''}</div>`
+      + `</div>`
+    : `<div style="padding:2px 0 8px">`
+      + bigNum('0% in the market — all cash', '#f85149')
+      + `<div style="color:var(--muted);margin-top:5px">No entry signal right now. Price ${fmtP(now)}.</div>`
+      + `</div>`;
+
   const stance = ad.stance==='IN'
     ? '<b style="color:#7ee787">INVESTED</b> — trend intact, stay with the position'
     : '<b style="color:#f85149">IN CASH</b> — no entry signal, capital protected';
@@ -458,11 +489,17 @@ function advisor(result){
         + `</div>`:'')
       + `</div>`;
   }
-  el.innerHTML = `<div style="margin-bottom:4px">${stance}</div>${sig}${vol}${liq}${cyc}`;
+  // everything below is the technical read — collapsed by default so the panel stays readable
+  el.innerHTML = head
+    + `<details class="detail"${advisorOpen?' open':''}><summary>Technical detail</summary>`
+    + `<div style="margin:4px 0">${stance}</div>${sig}${vol}${liq}${cyc}</details>`;
+  const d=el.querySelector('details');
+  if(d) d.addEventListener('toggle',()=>{ advisorOpen=d.open; });
 }
+let advisorOpen=false;   // remembered across recalcs so it doesn't snap shut while you read it
 // ---- Compare page: own controls (strategy filter, TF, refresh), sortable columns ----
 const CMP_SYMS=['BTCUSDT','ZECUSDT','SOLUSDT','XRPUSDT','XMRUSDT','SUIUSDT','LINKUSDT'];
-const CMP_STRATS=[['cycle','BTC Cycle'],['tsmom','Trend Follow'],['donch','Turtle']];
+const CMP_STRATS=[['cycle','BTC Cycle'],['tsmom','Trend Follow'],['donch','Turtle'],['liqbrk','Liq Breakout']];
 const CMP_BARS={ '4h':10000, '1d':4500, '1w':600 };   // 4h maxed: ~4.6y is all Binance serves
 const cmpCache={}, cmpRowsTf={};                   // klines per sym|tf; computed rows per tf
 let cmpSort={k:'cagr',d:-1}, cmpBusy=false;
@@ -549,15 +586,7 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>show
 
 $('run').addEventListener('click', run);
 $('recalc').addEventListener('click', recalc);
-// zecdiv is TF-locked to ZEC 15m (see ALGORITHM.md) — snap the controls rather than
-// render meaningless results on whatever symbol/TF happened to be loaded
-$('strategy').addEventListener('change', ()=>{
-  stratInfo();
-  if($('strategy').value==='zecdiv' && ($('sym').value!=='ZECUSDT' || $('tf').value!=='15m')){
-    $('sym').value='ZECUSDT'; $('tf').value='15m'; run(); return;
-  }
-  recalc();
-});
+$('strategy').addEventListener('change', ()=>{ stratInfo(); recalc(); });
 $('liq').addEventListener('change', recalc);
 $('sym').addEventListener('keydown', e=>{ if(e.key==='Enter') run(); });
 $('tf').addEventListener('change', run);
