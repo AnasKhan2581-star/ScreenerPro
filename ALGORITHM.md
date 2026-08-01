@@ -41,8 +41,9 @@ strategy**, not as a strategy on its own.
 
 ## `liqbrk` - buy-side liquidity continuation (July 2026)
 
-The app's first intraday-native strategy, built for **ZEC 15m** but day-denominated so it runs on
-any TF. Long only.
+A **swing** system that runs on 15m bars: it holds ~30h and trades ~6x/month. It is **not** a
+day-trading setup - three day-trade variants were built and all lost to it (see below). Built for
+**ZEC 15m**, day-denominated so it runs on any TF. Long only.
 
 **The finding that drove it.** Three original liquidity strategies were built and all three lost
 money in *every* fold (see the rejection list below). A forward-return study explained why: on ZEC
@@ -101,6 +102,40 @@ showed their signal bars were statistically indistinguishable from random bars):
   hour-of-day scan later showed **no session edge at all** on this pair.
 - **S3 liquidation-cascade fade** - price >=2 ATR below rolling VWAP on a volume spike, reversal bar,
   target VWAP. n=435, WR 36.1%, PF 0.65, 9/9 losing quarters. Fading extension is backwards here.
+
+
+### `liqbrk` is a SWING system, not day trading (recorded July 2026)
+
+It runs on 15m bars but **holds ~1-2 days (avg 30.7h) and trades ~6x/month**. Labelling it
+"intraday" was wrong and is corrected in the UI.
+
+**Three genuine day-trading variants were built and ALL lost to it** (identical engine, next-open
+fills, 0.1%/side, 1% risk; every candidate forced to avg hold <=12h and >=15 trades/month, and
+required positive in all three chronological folds):
+
+| system | n | WR | PF | net | maxDD | /mo | hold |
+|---|---|---|---|---|---|---|---|
+| **SWING liqbrk (kept)** | 136 | 34.6% | **2.66** | **+250.9%** | **13.3%** | 5.7 | 30.7h |
+| DT1 intraday breakout (2h break / 6h trail / 12h cap) | 533 | 36.0% | 1.28 | +126.8% | 18.6% | 22.5 | 7.1h |
+| DT2 momentum pullback (dip to fast EMA in uptrend) | 365 | 37.0% | 1.13 | +31.5% | 20.3% | 15.4 | 6.0h |
+| DT3 squeeze expansion (range compression -> first break) | 360 | **43.3%** | 1.14 | +25.6% | 17.6% | 15.2 | 4.6h |
+
+DT3 has the best win rate but PF 1.14 and a **negative first fold** - a coin flip after costs.
+
+**Why day trading loses here, quantitatively:**
+
+| | avg gross move/trade | 0.2% round-trip fee as % of that move | total fee drag | biggest winner | top-5 winners = % of gross profit |
+|---|---|---|---|---|---|
+| SWING | **2.179%** | **9%** | 28% of notional | **+147.9%** | **44%** |
+| DT1 | 0.596% | **34%** | **103% of notional** | +49.4% | 15% |
+
+Two independent killers. (1) **Fees**: a day trade's average move is 0.6%, so the round trip takes
+34% of it, and across 517 trades the drag exceeds the entire notional. (2) **The fat tail is the
+edge**: 44% of the swing system's gross profit comes from its top 5 trades, and its best ran +148%.
+A 12h hold cap makes that structurally impossible - you cannot hold a +148% move for 12 hours.
+
+**Do not retry day trading on this pair** unless fees drop by an order of magnitude (maker rebates)
+or a genuinely different, higher-frequency edge is found and PROVEN against a random baseline first.
 
 **Engine bug this exposed** (fixed July 2026): `runQuant` guarded *every* strategy with
 `if (n < maLen + 2) return` and started its loop at `maLen`, where `maLen` is the **200-day** MA -

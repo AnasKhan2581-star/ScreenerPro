@@ -104,7 +104,7 @@
       <option value="cycle" selected>BTC Cycle · halving playbook</option>
       <option value="tsmom">Trend Follow · CTA momentum</option>
       <option value="donch">Turtle · channel breakout</option>
-      <option value="liqbrk">Liquidity Breakout · intraday</option>
+      <option value="liqbrk">Liquidity Breakout · 15m swing</option>
     </select>
   </label>
   <label class="cc">Symbol<input id="sym" class="sym" value="BTCUSDT" list="symList" /></label>
@@ -428,7 +428,7 @@ function recalc(){
 const STRAT_INFO = {
   cycle: '<b>BTC Cycle (halving playbook)</b> — signals that repeated at every cycle turn since 2015 (2013 documented): BUY when ≥2 of {price at the 200-week MA, Mayer&lt;0.8, weekly RSI&lt;35} + a sweep-reclaim or 20-day breakout. Accumulation is TWO tranches: half in zone A (200w→×1.1), half on the deep-zone recovery (0.72–1.0×200w — every real bottom pierces the 200w), entry = tranche average, stop 0.65×200w (under the deepest pierce on record). SELL on the Pi-Cycle cross (2017 & Apr-2021 tops to the day) or a persistent 40-week break. BTC-specific.',
   tsmom: '<b>Trend Follow (CTA momentum)</b> — long while price closes above its 200-day average AND the 90-day return is positive; 100% in cash otherwise. Rides bull markets, sits out bears. Low win rate, huge winners — the core system of trend funds like AQR and Man AHL.',
-  liqbrk: '<b>Liquidity Breakout</b> — buy-side liquidity (short stops + resting breakout orders) piles up above recent highs. When price <b>closes through the 2-day high on above-average volume, in an uptrend</b>, that pool gets taken and the move usually <b>continues</b> — so we join the raid instead of fading it. Stop 3×ATR (scales with volatility, never a fixed %); we trail out on a close below the 1-day low. Built for <b>ZEC 15m</b> after a forward-return study showed the opposite of SMC folklore: on ZEC, top-of-range and above-VWAP states return 2–3× baseline while buying “discount” returns <i>less than random</i>. ZEC 15m net of fees: <b>WR 35–39%</b>, PF 2.7, +251% at 1% risk/trade, max drawdown <b>13%</b> — versus buy &amp; hold +1086% at <b>74%</b> drawdown, and only 24% time in market.',
+  liqbrk: '<b>Liquidity Breakout</b> — a <b>swing</b> system that runs on 15m bars: it holds <b>~1–2 days</b> and takes ~6 trades/month, so it is <i>not</i> a day-trading setup. Buy-side liquidity (short stops + resting breakout orders) piles up above recent highs. When price <b>closes through the 2-day high on above-average volume, in an uptrend</b>, that pool gets taken and the move usually <b>continues</b> — so we join the raid instead of fading it. Stop 3×ATR (scales with volatility, never a fixed %); we trail out on a close below the 1-day low. ZEC 15m net of fees: <b>WR 34%</b>, PF 2.7, +251% at 1% risk/trade, max drawdown <b>13%</b> — versus buy &amp; hold +1086% at <b>74%</b> drawdown, and only 24% time in market. <b>Why not day trading:</b> three genuine day-trade variants (intraday breakout, momentum pullback, squeeze expansion) were built and all lost to this — best PF 1.28 vs 2.66. At a 0.6% average move, the 0.2% round-trip fee eats 34% of every trade, and capping holds at 12h destroys the fat tail this edge depends on (its best trade ran +148%).',
   donch: '<b>Turtle (channel breakout)</b> — buys a close above the 55-day high, exits on a close below the 20-day low (2×ATR initial stop). The original managed-futures system: many small losses, a few enormous riders.',
 };
 const stratInfo=()=>{ $('stratInfo').innerHTML = STRAT_INFO[$('strategy').value] || ''; };
