@@ -104,6 +104,35 @@ showed their signal bars were statistically indistinguishable from random bars):
   target VWAP. n=435, WR 36.1%, PF 0.65, 9/9 losing quarters. Fading extension is backwards here.
 
 
+
+### CORRECTION: the 13.5% drawdown was a test-window artifact (Aug 2026)
+
+The benchmark above was run on **2024-08 -> 2026-07** because that was the cached window. The
+Python desktop tester (`pytester/`, no 10k-bar cap) re-ran `liqbrk` on the **full listed ZEC 15m
+history: 258,228 bars, 2019-03-21 -> 2026-08-03**. The result is materially worse and the earlier
+"positive in all three folds" claim does NOT survive:
+
+| window | n | WR | PF | net | maxDD | losing quarters |
+|---|---|---|---|---|---|---|
+| 2024-08 -> 2026-07 (as first reported) | 134 | 33.6% | 2.91 | +304% | **13.5%** | 3/9 |
+| **2019-03 -> 2026-08 (full history)** | **553** | **23.9%** | **1.39** | **+199%** | **61.1%** | **15/31** |
+
+Fold breakdown on full history: A +28.1% / **B -33.0% (55.4% drawdown)** / C +248.8%. Fold B spans
+roughly 2021-09 -> 2024-01 - ZEC's grind from ~$200 to ~$20. The strategy bleeds for about two and
+a half years: 22Q2 -13%, 23Q1 -10%, 23Q3 -21%, 23Q4 -13%, 24Q2 -14%.
+
+**A stronger regime filter does not fix it.** Sweeping `lbTrend` from 5 to 200 days leaves fold B
+negative at every setting (expR -0.21 to -0.41); the best it buys is drawdown 61% -> 52%. This is
+structural: a long-only breakout system in a multi-year bear market has nothing to do but lose
+slowly.
+
+**What is still true:** over 7.4 years it is net positive (+199%) and its 61% drawdown beats buy &
+hold's 96%. **What is not true:** that it is a low-drawdown system. Size it as a bull-regime
+strategy that will go quiet-to-negative for years at a time, not as an all-weather one.
+
+**Process lesson:** validate on ALL available history, not the window that happens to be cached.
+Two years of a bull market flattered every statistic here.
+
 ### `liqbrk` is a SWING system, not day trading (recorded July 2026)
 
 It runs on 15m bars but **holds ~1-2 days (avg 30.7h) and trades ~6x/month**. Labelling it
